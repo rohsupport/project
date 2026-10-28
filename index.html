@@ -12,201 +12,125 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#f7f8fc;
-    --card:#ffffff;
-    --text:#111827;
-    --text-2:#6b7280;
-    --border:#e5e7eb;
-    --primary:#4f46e5;
-    --primary-hover:#4338ca;
-    --primary-soft:#eef2ff;
-    --danger:#dc2626;
-    --danger-soft:#fef2f2;
-    --success:#059669;
-    --success-soft:#ecfdf5;
-    --radius:20px;
-    --radius-sm:14px;
+    --bg:#f7f8fc;--card:#fff;--text:#111827;--text-2:#6b7280;--border:#e5e7eb;
+    --primary:#4f46e5;--primary-hover:#4338ca;--primary-soft:#eef2ff;
+    --danger:#dc2626;--danger-soft:#fef2f2;
+    --success:#059669;--success-soft:#ecfdf5;
+    --radius:20px;--radius-sm:14px;
     --shadow:0 1px 2px rgba(17,24,39,.04), 0 4px 20px rgba(17,24,39,.05);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
-  body{
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:var(--bg);color:var(--text);
-    min-height:100dvh;font-size:16px;line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-  }
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:var(--bg);color:var(--text);min-height:100dvh;font-size:16px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;}
   .app{max-width:480px;margin:0 auto;padding:0 16px 100px;min-height:100dvh}
 
-  /* Заголовок */
   .header{padding:24px 4px 20px;display:flex;align-items:center;justify-content:space-between}
   .header h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
   .header p{font-size:14px;color:var(--text-2);margin-top:2px}
-  .icon-btn{
-    width:44px;height:44px;border-radius:50%;border:none;background:transparent;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    color:var(--text-2);transition:background .15s;
-  }
+  .header-btns{display:flex;gap:4px}
+  .icon-btn{width:44px;height:44px;border-radius:50%;border:none;background:transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2);
+    transition:background .15s}
   .icon-btn:active{background:#eef0f5}
 
-  /* Карточки */
-  .card{
-    background:var(--card);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:20px;margin-bottom:16px;
-  }
+  .card{background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
 
-  /* Поля ввода */
-  .field{margin-bottom:14px;position:relative}
-  .field label{
-    display:block;font-size:13px;font-weight:500;
-    color:var(--text-2);margin-bottom:6px;
-  }
-  .field input{
-    width:100%;padding:14px 16px;font-size:16px;font-family:inherit;
-    background:#f9fafb;color:var(--text);
-    border:1.5px solid transparent;border-radius:var(--radius-sm);
-    transition:border-color .15s, background .15s;
-  }
-  .field input:focus{
-    outline:none;background:#fff;border-color:var(--primary);
-  }
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--text-2);margin-bottom:6px}
+  .field input{width:100%;padding:14px 16px;font-size:16px;font-family:inherit;
+    background:#f9fafb;color:var(--text);border:1.5px solid transparent;
+    border-radius:var(--radius-sm);transition:border-color .15s, background .15s}
+  .field input:focus{outline:none;background:#fff;border-color:var(--primary)}
   .field input::placeholder{color:#9ca3af}
 
-  /* Кнопки */
-  .btn{
-    width:100%;padding:16px 20px;font-size:16px;font-weight:600;font-family:inherit;
+  .btn{width:100%;padding:16px 20px;font-size:16px;font-weight:600;font-family:inherit;
     border:none;border-radius:var(--radius-sm);cursor:pointer;
-    transition:background .15s, transform .1s;
-  }
+    transition:background .15s, transform .1s}
   .btn-primary{background:var(--primary);color:#fff}
   .btn-primary:active{background:var(--primary-hover);transform:scale(.98)}
   .btn-primary:disabled{background:#a5a6f6;cursor:not-allowed;transform:none}
-  .btn-secondary{
-    background:var(--primary-soft);color:var(--primary);
-  }
-  .btn-secondary:active{background:#e0e7ff}
 
-  /* Вкладки */
-  .tabs{
-    display:flex;background:#eef0f5;border-radius:var(--radius-sm);
-    padding:4px;margin-bottom:20px;
-  }
-  .tabs button{
-    flex:1;padding:12px;font-size:15px;font-weight:600;font-family:inherit;
-    border:none;border-radius:11px;background:transparent;
-    color:var(--text-2);cursor:pointer;transition:all .2s;
-  }
-  .tabs button.active{
-    background:#fff;color:var(--text);
-    box-shadow:0 1px 3px rgba(17,24,39,.08);
-  }
+  .tabs{display:flex;background:#eef0f5;border-radius:var(--radius-sm);padding:4px;margin-bottom:20px}
+  .tabs button{flex:1;padding:12px;font-size:15px;font-weight:600;font-family:inherit;
+    border:none;border-radius:11px;background:transparent;color:var(--text-2);
+    cursor:pointer;transition:all .2s}
+  .tabs button.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(17,24,39,.08)}
 
-  /* Сообщения */
-  .alert{
-    padding:14px 16px;border-radius:var(--radius-sm);
-    font-size:14px;margin-bottom:16px;
-    display:none;
-  }
+  .alert{padding:14px 16px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;display:none}
   .alert.show{display:block;animation:slideIn .2s ease}
   @keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
   .alert.error{background:var(--danger-soft);color:#991b1b;border:1px solid #fecaca}
   .alert.success{background:var(--success-soft);color:#065f46;border:1px solid #a7f3d0}
 
-  /* Профиль */
-  .profile{
-    display:flex;align-items:center;gap:14px;
-    padding:20px;border-radius:var(--radius);
-    background:linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
-    margin-bottom:16px;
-  }
-  .profile .avatar{
-    width:56px;height:56px;border-radius:50%;
-    background:var(--primary);color:#fff;
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;font-weight:600;flex-shrink:0;
-  }
+  .profile{display:flex;align-items:center;gap:14px;padding:20px;
+    border-radius:var(--radius);background:linear-gradient(135deg,#eef2ff 0%,#f5f3ff 100%);
+    margin-bottom:16px}
+  .profile .avatar{width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;flex-shrink:0}
   .profile .info{flex:1;min-width:0}
   .profile .name{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .profile .meta{font-size:13px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* Секция */
-  .section-head{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 4px;margin:20px 0 10px;
-  }
-  .section-head h2{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
-  .section-head .count{
-    font-size:12px;font-weight:600;color:var(--primary);
-    background:var(--primary-soft);padding:2px 10px;border-radius:100px;
-  }
+  .section-head{display:flex;align-items:center;justify-content:space-between;
+    padding:0 4px;margin:20px 0 10px}
+  .section-head h2{font-size:13px;font-weight:600;color:var(--text-2);
+    text-transform:uppercase;letter-spacing:.06em}
+  .section-head .count{font-size:12px;font-weight:600;color:var(--primary);
+    background:var(--primary-soft);padding:2px 10px;border-radius:100px}
 
-  /* Маршруты */
   .routes-list{display:grid;gap:10px}
-  .route-item{
-    display:flex;align-items:center;gap:14px;
-    padding:16px;background:var(--card);border-radius:var(--radius-sm);
-    box-shadow:var(--shadow);transition:transform .1s;
-  }
+  .route-item{display:flex;align-items:center;gap:14px;padding:16px;background:var(--card);
+    border-radius:var(--radius-sm);box-shadow:var(--shadow);transition:transform .1s}
   .route-item:active{transform:scale(.99)}
-  .route-icon{
-    width:40px;height:40px;border-radius:11px;
-    background:var(--primary-soft);color:var(--primary);
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
+  .route-icon{width:40px;height:40px;border-radius:11px;background:var(--primary-soft);
+    color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .route-icon .material-symbols-outlined{font-size:22px}
   .route-item .content{flex:1;min-width:0}
   .route-item .name{font-size:15px;font-weight:500;word-break:break-word}
   .route-item .date{font-size:12px;color:var(--text-2);margin-top:3px}
 
-  /* Пустое состояние */
-  .empty{
-    padding:40px 20px;text-align:center;color:var(--text-2);
-    background:var(--card);border-radius:var(--radius);
-    box-shadow:var(--shadow);
-  }
+  .empty{padding:40px 20px;text-align:center;color:var(--text-2);
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
   .empty .material-symbols-outlined{font-size:48px;color:#d1d5db;display:block;margin:0 auto 12px}
   .empty p{font-size:14px}
 
-  /* Замеры */
   .timings{display:grid;gap:0}
-  .timings .row{
-    display:flex;justify-content:space-between;
-    padding:12px 0;font-size:14px;
-    border-bottom:1px solid #f3f4f6;
-  }
+  .timings .row{display:flex;justify-content:space-between;padding:12px 0;
+    font-size:14px;border-bottom:1px solid #f3f4f6}
   .timings .row:last-child{border-bottom:none}
   .timings .label{color:var(--text-2)}
   .timings .val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--primary)}
 
-  /* FAB */
-  .fab{
-    position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));
-    right:calc(50% - 240px + 16px);
-    width:60px;height:60px;border-radius:20px;
+  /* Аналитика */
+  .log-item{padding:14px 16px;background:var(--card);border-radius:var(--radius-sm);
+    box-shadow:var(--shadow);margin-bottom:10px;display:flex;flex-direction:column;gap:4px}
+  .log-item .row1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .log-item .login{font-weight:600;font-size:15px}
+  .log-item .badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px}
+  .log-item .badge.ok{background:var(--success-soft);color:#065f46}
+  .log-item .badge.fail{background:var(--danger-soft);color:#991b1b}
+  .log-item .meta{font-size:12px;color:var(--text-2);word-break:break-all}
+
+  .fab{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));
+    right:calc(50% - 240px + 16px);width:60px;height:60px;border-radius:20px;
     background:var(--primary);color:#fff;border:none;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 4px 16px rgba(79,70,229,.4);
-    transition:transform .1s, box-shadow .15s;z-index:20;
-  }
-  .fab:active{transform:scale(.94);box-shadow:0 2px 8px rgba(79,70,229,.4)}
+    transition:transform .1s, box-shadow .15s;z-index:20}
+  .fab:active{transform:scale(.94)}
   .fab .material-symbols-outlined{font-size:28px}
-  @media (max-width:520px){
-    .fab{right:16px}
-  }
+  @media (max-width:520px){ .fab{right:16px} }
 
-  /* Bottom sheet */
-  .scrim{
-    position:fixed;inset:0;background:rgba(17,24,39,.5);
-    display:none;z-index:30;opacity:0;transition:opacity .2s;
-  }
+  .scrim{position:fixed;inset:0;background:rgba(17,24,39,.5);display:none;z-index:30;
+    opacity:0;transition:opacity .2s}
   .scrim.open{display:block;opacity:1}
-  .sheet{
-    position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;
     background:#fff;border-radius:24px 24px 0 0;
     padding:12px 20px calc(20px + env(safe-area-inset-bottom));
-    transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-    z-index:31;
-  }
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:31}
   .sheet.open{transform:translateY(0)}
   .sheet .handle{width:36px;height:4px;border-radius:2px;background:#e5e7eb;margin:0 auto 16px}
   .sheet h2{font-size:18px;font-weight:600;margin-bottom:20px}
@@ -219,17 +143,12 @@
 <!-- ЭКРАН ВХОДА -->
 <div id="authScreen" class="app hidden">
   <div class="header">
-    <div>
-      <h1>Маршруты</h1>
-      <p>Войдите в аккаунт</p>
-    </div>
+    <div><h1>Маршруты</h1><p>Войдите в аккаунт</p></div>
   </div>
-
   <div class="tabs">
     <button id="tabLogin" class="active">Вход</button>
     <button id="tabRegister">Регистрация</button>
   </div>
-
   <div id="alertAuth" class="alert"></div>
 
   <div id="loginForm" class="card">
@@ -245,26 +164,16 @@
   </div>
 
   <div id="registerForm" class="card hidden">
-    <div class="field">
-      <label for="regFullName">ФИО</label>
-      <input id="regFullName" type="text" placeholder="Иванов Иван Иванович" autocomplete="name">
-    </div>
-    <div class="field">
-      <label for="regPhone">Телефон</label>
-      <input id="regPhone" type="tel" placeholder="+7 900 000-00-00" autocomplete="tel">
-    </div>
-    <div class="field">
-      <label for="regLogin">Логин</label>
-      <input id="regLogin" type="text" placeholder="Латиница, цифры, точка, _" autocomplete="username" autocapitalize="off">
-    </div>
-    <div class="field">
-      <label for="regPassword">Пароль</label>
-      <input id="regPassword" type="password" placeholder="Минимум 6 символов" autocomplete="new-password">
-    </div>
-    <div class="field">
-      <label for="regPassword2">Повтор пароля</label>
-      <input id="regPassword2" type="password" placeholder="Повторите пароль" autocomplete="new-password">
-    </div>
+    <div class="field"><label for="regFullName">ФИО</label>
+      <input id="regFullName" type="text" placeholder="Иванов Иван Иванович" autocomplete="name"></div>
+    <div class="field"><label for="regPhone">Телефон</label>
+      <input id="regPhone" type="tel" placeholder="+7 900 000-00-00" autocomplete="tel"></div>
+    <div class="field"><label for="regLogin">Логин</label>
+      <input id="regLogin" type="text" placeholder="Латиница, цифры, точка, _" autocomplete="username" autocapitalize="off"></div>
+    <div class="field"><label for="regPassword">Пароль</label>
+      <input id="regPassword" type="password" placeholder="Минимум 6 символов" autocomplete="new-password"></div>
+    <div class="field"><label for="regPassword2">Повтор пароля</label>
+      <input id="regPassword2" type="password" placeholder="Повторите пароль" autocomplete="new-password"></div>
     <button id="registerBtn" class="btn btn-primary">Зарегистрироваться</button>
   </div>
 </div>
@@ -272,13 +181,15 @@
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div id="appScreen" class="app hidden">
   <div class="header">
-    <div>
-      <h1>Маршруты</h1>
-      <p>Управление поездками</p>
+    <div><h1>Маршруты</h1><p>Управление поездками</p></div>
+    <div class="header-btns">
+      <button id="analyticsBtn" class="icon-btn hidden" aria-label="Аналитика">
+        <span class="material-symbols-outlined">analytics</span>
+      </button>
+      <button id="logoutBtn" class="icon-btn" aria-label="Выйти">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
     </div>
-    <button id="logoutBtn" class="icon-btn" aria-label="Выйти">
-      <span class="material-symbols-outlined">logout</span>
-    </button>
   </div>
 
   <div class="profile">
@@ -291,21 +202,30 @@
 
   <div id="alertApp" class="alert"></div>
 
-  <div class="section-head">
-    <h2>Маршруты</h2>
-    <span class="count" id="routesCount">0</span>
-  </div>
+  <div class="section-head"><h2>Маршруты</h2><span class="count" id="routesCount">0</span></div>
   <div id="routesList" class="routes-list"></div>
   <div id="emptyNote" class="empty hidden">
     <span class="material-symbols-outlined">route</span>
     <p>Список пуст.<br>Нажмите «+», чтобы добавить маршрут.</p>
   </div>
 
-  <div class="section-head">
-    <h2>Скорость запросов</h2>
+  <div class="section-head"><h2>Скорость запросов</h2></div>
+  <div class="card"><div class="timings" id="timings"></div></div>
+</div>
+
+<!-- ЭКРАН АНАЛИТИКИ -->
+<div id="analyticsScreen" class="app hidden">
+  <div class="header">
+    <div><h1>Аналитика</h1><p>Последние 100 входов</p></div>
+    <button id="backBtn" class="icon-btn" aria-label="Назад">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
   </div>
-  <div class="card">
-    <div class="timings" id="timings"></div>
+  <div id="alertAnalytics" class="alert"></div>
+  <div id="logsList"></div>
+  <div id="logsEmpty" class="empty hidden">
+    <span class="material-symbols-outlined">analytics</span>
+    <p>Записей пока нет.</p>
   </div>
 </div>
 
@@ -317,10 +237,8 @@
 <div id="sheet" class="sheet">
   <div class="handle"></div>
   <h2>Новый маршрут</h2>
-  <div class="field">
-    <label for="routeName">Название</label>
-    <input id="routeName" type="text" placeholder="Например: Центр — Вокзал">
-  </div>
+  <div class="field"><label for="routeName">Название</label>
+    <input id="routeName" type="text" placeholder="Например: Центр — Вокзал"></div>
   <button id="addRouteBtn" class="btn btn-primary">Добавить</button>
 </div>
 
@@ -333,6 +251,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const $ = (id) => document.getElementById(id);
 const LS_KEY = 'routes_user';
+const ADMIN_LOGIN = 'admin';
 
 let currentUser = null;
 let timingsData = {};
@@ -344,7 +263,9 @@ function showAlert(id, msg, type = 'error') {
   if (type === 'success') setTimeout(() => { box.className = 'alert'; box.textContent = ''; }, 3500);
 }
 function hideAlerts() {
-  ['alertAuth', 'alertApp'].forEach(id => { const b = $(id); b.className = 'alert'; b.textContent = ''; });
+  ['alertAuth','alertApp','alertAnalytics'].forEach(id => {
+    const b = $(id); if (b) { b.className = 'alert'; b.textContent = ''; }
+  });
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -366,6 +287,15 @@ function translateError(err) {
   return err.message || 'Произошла ошибка.';
 }
 
+/* Запись лога входа */
+async function logLogin(login, success) {
+  try {
+    await sb.from('login_logs').insert({
+      login: login, success: success, user_agent: navigator.userAgent.slice(0, 200)
+    });
+  } catch (e) { /* лог не критичен, молча игнорируем */ }
+}
+
 $('tabLogin').addEventListener('click', () => {
   $('tabLogin').classList.add('active'); $('tabRegister').classList.remove('active');
   $('loginForm').classList.remove('hidden'); $('registerForm').classList.add('hidden');
@@ -380,18 +310,23 @@ $('tabRegister').addEventListener('click', () => {
 function showAuth() {
   $('authScreen').classList.remove('hidden');
   $('appScreen').classList.add('hidden');
+  $('analyticsScreen').classList.add('hidden');
   $('fabAdd').classList.add('hidden');
   closeSheet();
 }
 async function showApp(user) {
   currentUser = user;
   $('authScreen').classList.add('hidden');
+  $('analyticsScreen').classList.add('hidden');
   $('appScreen').classList.remove('hidden');
   $('fabAdd').classList.remove('hidden');
 
   $('profileName').textContent = user.full_name || '—';
   $('profileMeta').textContent = (user.login ? 'Логин: ' + user.login : '') + (user.phone ? ' · ' + user.phone : '');
   $('avatarLetter').textContent = (user.full_name || 'U').trim().charAt(0).toUpperCase();
+
+  if (user.login === ADMIN_LOGIN) $('analyticsBtn').classList.remove('hidden');
+  else $('analyticsBtn').classList.add('hidden');
 
   renderTimings();
   await loadRoutes();
@@ -412,13 +347,11 @@ async function register() {
   if (pass !== pass2) return showAlert('alertAuth', 'Пароли не совпадают.');
 
   hideAlerts();
-  const btn = $('registerBtn');
-  btn.disabled = true;
+  const btn = $('registerBtn'); btn.disabled = true;
 
   const t1 = performance.now();
   const { data: existing, error: checkErr } = await sb.from('users').select('id').eq('login', login).maybeSingle();
   setTiming('register', performance.now() - t1);
-
   if (checkErr) { btn.disabled = false; return showAlert('alertAuth', 'Ошибка: ' + translateError(checkErr)); }
   if (existing) { btn.disabled = false; return showAlert('alertAuth', 'Такой логин уже занят.'); }
 
@@ -427,7 +360,6 @@ async function register() {
     full_name: fullName, phone, login, password: pass
   }).select().single();
   setTiming('register', performance.now() - t2);
-
   btn.disabled = false;
   if (error) return showAlert('alertAuth', 'Ошибка: ' + translateError(error));
 
@@ -442,18 +374,24 @@ async function login() {
   if (!login || !pass) return showAlert('alertAuth', 'Введите логин и пароль.');
 
   hideAlerts();
-  const btn = $('loginBtn');
-  btn.disabled = true;
+  const btn = $('loginBtn'); btn.disabled = true;
 
   const t0 = performance.now();
   const { data, error } = await sb.from('users')
     .select('*').eq('login', login).eq('password', pass).maybeSingle();
   setTiming('auth', performance.now() - t0);
-
   btn.disabled = false;
-  if (error) return showAlert('alertAuth', 'Ошибка: ' + translateError(error));
-  if (!data) return showAlert('alertAuth', 'Неверный логин или пароль.');
 
+  if (error) {
+    await logLogin(login, false);
+    return showAlert('alertAuth', 'Ошибка: ' + translateError(error));
+  }
+  if (!data) {
+    await logLogin(login, false);
+    return showAlert('alertAuth', 'Неверный логин или пароль.');
+  }
+
+  await logLogin(login, true);
   localStorage.setItem(LS_KEY, JSON.stringify(data));
   await showApp(data);
 }
@@ -473,18 +411,13 @@ async function loadRoutes() {
     .order('created_at', { ascending: false })
     .limit(50);
   setTiming('list', performance.now() - t0);
-
   if (error) return showAlert('alertApp', 'Ошибка загрузки: ' + translateError(error));
 
-  const list = $('routesList');
-  list.innerHTML = '';
+  const list = $('routesList'); list.innerHTML = '';
   const count = data ? data.length : 0;
   $('routesCount').textContent = count;
 
-  if (count === 0) {
-    $('emptyNote').classList.remove('hidden');
-    return;
-  }
+  if (count === 0) { $('emptyNote').classList.remove('hidden'); return; }
   $('emptyNote').classList.add('hidden');
   for (const r of data) {
     const date = r.created_at
@@ -494,11 +427,43 @@ async function loadRoutes() {
     div.className = 'route-item';
     div.innerHTML = `
       <div class="route-icon"><span class="material-symbols-outlined">route</span></div>
-      <div class="content">
-        <div class="name">${escapeHtml(r.name)}</div>
-        <div class="date">${escapeHtml(date)}</div>
-      </div>`;
+      <div class="content"><div class="name">${escapeHtml(r.name)}</div>
+      <div class="date">${escapeHtml(date)}</div></div>`;
     list.appendChild(div);
+  }
+}
+
+async function showAnalytics() {
+  hideAlerts();
+  $('appScreen').classList.add('hidden');
+  $('analyticsScreen').classList.remove('hidden');
+  $('fabAdd').classList.add('hidden');
+
+  const { data, error } = await sb.from('login_logs')
+    .select('login, success, user_agent, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) return showAlert('alertAnalytics', 'Ошибка: ' + translateError(error));
+
+  const box = $('logsList'); box.innerHTML = '';
+  if (!data || data.length === 0) { $('logsEmpty').classList.remove('hidden'); return; }
+  $('logsEmpty').classList.add('hidden');
+
+  for (const l of data) {
+    const date = l.created_at
+      ? new Date(l.created_at).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' })
+      : '';
+    const div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `
+      <div class="row1">
+        <span class="login">${escapeHtml(l.login)}</span>
+        <span class="badge ${l.success ? 'ok' : 'fail'}">${l.success ? 'Успешно' : 'Отказ'}</span>
+      </div>
+      <div class="meta">${escapeHtml(date)}</div>
+      <div class="meta">${escapeHtml(l.user_agent || '')}</div>`;
+    box.appendChild(div);
   }
 }
 
@@ -518,13 +483,11 @@ async function addRoute() {
   const name = $('routeName').value.trim();
   if (!name) return showAlert('alertApp', 'Введите название.');
   hideAlerts();
-  const btn = $('addRouteBtn');
-  btn.disabled = true;
+  const btn = $('addRouteBtn'); btn.disabled = true;
 
   const t0 = performance.now();
   const { error } = await sb.from('routes').insert({ name });
   setTiming('add', performance.now() - t0);
-
   btn.disabled = false;
   if (error) return showAlert('alertApp', 'Ошибка: ' + translateError(error));
 
@@ -541,15 +504,18 @@ $('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') log
 $('routeName').addEventListener('keydown', e => { if (e.key === 'Enter') addRoute(); });
 $('fabAdd').addEventListener('click', openSheet);
 $('scrim').addEventListener('click', closeSheet);
+$('analyticsBtn').addEventListener('click', showAnalytics);
+$('backBtn').addEventListener('click', async () => {
+  $('analyticsScreen').classList.add('hidden');
+  $('appScreen').classList.remove('hidden');
+  $('fabAdd').classList.remove('hidden');
+  await loadRoutes();
+});
 
 (async function init() {
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
-    try {
-      const u = JSON.parse(saved);
-      await showApp(u);
-      return;
-    } catch (e) {}
+    try { const u = JSON.parse(saved); await showApp(u); return; } catch (e) {}
   }
   showAuth();
 })();
