@@ -6,23 +6,64 @@
   <title>Остановки — Управление транспортом</title>
   <link rel="stylesheet" href="css/style.css" />
   
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Leaflet Geocoder CSS (для поиска по адресу) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   
   <style>
-    /* Стили для модалки и карты */
-    .modal-map-wrapper { display: flex; gap: 16px; height: 350px; margin-bottom: 16px; }
-    .map-container { flex: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
-    #modal-map { width: 100%; height: 100%; }
-    .coords-input-group { display: flex; gap: 8px; margin-top: 4px; }
-    .coords-input-group input { font-family: monospace; }
-    .modal__body { min-width: 600px; } /* Чтобы карта была широкой */
-    @media (max-width: 768px) {
-      .modal__body { min-width: auto; }
-      .modal-map-wrapper { flex-direction: column; height: auto; }
-      .map-container { height: 250px; }
+    /* Сетка: 1/3 форма, 2/3 карта */
+    .stops-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 16px;
+      height: calc(100vh - 140px);
+      min-height: 600px;
+    }
+    .stops-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .stops-map-wrapper {
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    #main-map { width: 100%; height: 100%; }
+    
+    /* Скроллбар для панели */
+    .stops-panel::-webkit-scrollbar { width: 6px; }
+    .stops-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* JSON-редактор */
+    .json-textarea {
+      width: 100%;
+      height: 150px;
+      font-family: monospace;
+      font-size: 12px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      resize: vertical;
+    }
+    .json-textarea.error { border-color: var(--err); }
+
+    /* Компактный список последних добавленных */
+    .recent-list { display: flex; flex-direction: column; gap: 8px; }
+    .recent-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--card); border: 1px solid var(--border); 
+      padding: 8px 12px; border-radius: 8px; font-size: 13px;
+    }
+    .recent-code { font-family: monospace; font-weight: bold; color: var(--muted); }
+
+    @media (max-width: 900px) {
+      .stops-layout { grid-template-columns: 1fr; height: auto; }
+      .stops-map-wrapper { height: 300px; order: -1; }
     }
   </style>
 
