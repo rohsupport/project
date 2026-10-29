@@ -3,58 +3,89 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Остановки — Управление транспортом</title>
+  <title>Управление остановками — Транспорт</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
   
   <style>
     /* ==========================================
-       ЖЕСТКАЯ СЕТКА (Master-Detail)
+       ДИЗАЙН И СЕТКА (Master-Detail)
        ========================================== */
     .master-layout {
-      display: grid;
-      grid-template-columns: 50% 50%;
+      display: flex;
       gap: 16px;
-      height: calc(100vh - 120px); /* Высота экрана минус шапка сайта */
-      min-height: 600px;
+      height: calc(100vh - 140px);
+      min-height: 500px;
     }
 
-    /* Левая колонка (Таблица + Форма) */
     .master-left {
+      flex: 0 0 50%;
       display: flex;
       flex-direction: column;
       gap: 16px;
       height: 100%;
-      overflow: hidden;
     }
 
-    /* Форма добавления */
+    .master-right {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Фикс исчезновения карты */
+    #main-map {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: #e5e5e5; /* Заглушка пока грузится */
+    }
+
+    /* Форма */
     .add-card {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 20px;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    
+    .add-card h3 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
     }
-    
     .form-grid .full-width { grid-column: span 2; }
     
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .form-group input, .form-group select, .form-group textarea {
-      padding: 8px 10px; background: var(--bg); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
-      transition: border-color 0.2s;
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--brand); }
-    .form-group input[readonly] { background: rgba(255,255,255,0.05); color: var(--muted); cursor: not-allowed; }
+    .form-group input, .form-group select {
+      padding: 10px 12px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+    }
+    .form-group input[readonly] {
+      background: rgba(255,255,255,0.05); color: var(--muted); cursor: not-allowed;
+    }
 
     /* Таблица */
     .list-card {
@@ -65,74 +96,112 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    
     .list-header {
-      padding: 12px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      background: rgba(0,0,0,0.1);
+      gap: 12px;
+      background: rgba(0,0,0,0.2);
     }
-    
     .list-header select, .list-header input {
-      padding: 6px 10px; background: var(--bg); color: var(--text);
-      border: 1px solid var(--border); border-radius: 4px; font-size: 12px;
+      padding: 8px 12px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; font-size: 12px;
     }
-
-    .table-scroll { flex: 1; overflow-y: auto; }
     
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { position: sticky; top: 0; background: var(--panel); z-index: 10; padding: 10px; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
-    th:hover { color: var(--text); }
-    th .sort-icon { font-size: 10px; margin-left: 4px; opacity: 0.3; }
-    th.active-sort .sort-icon { opacity: 1; color: var(--brand); }
-    td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-    tr:hover td { background: rgba(37,99,235,0.05); }
-    tr.selected td { background: rgba(37,99,235,0.15); }
+    .table-scroll { flex: 1; overflow-y: auto; }
+    .table-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table-scroll th {
+      position: sticky; top: 0; background: var(--panel); z-index: 10;
+      padding: 12px 10px; text-align: left; font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+      cursor: pointer; user-select: none; transition: color 0.2s;
+    }
+    .table-scroll th:hover { color: var(--brand); }
+    .table-scroll td {
+      padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle; transition: background 0.2s;
+    }
+    .table-scroll tr:hover td { background: rgba(37,99,235,0.05); }
+    .table-scroll tr.selected td { background: rgba(37,99,235,0.15); }
 
     /* Статусы */
     .status-select {
-      padding: 6px; border-radius: 4px; font-size: 12px; font-weight: 600;
+      padding: 6px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
       border: 1px solid transparent; cursor: pointer; outline: none; width: 100%;
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
     .status-select.active { background: rgba(22,163,74,0.15); color: #4ade80; border-color: rgba(22,163,74,0.3); }
     .status-select.reconstruction { background: rgba(245,158,11,0.15); color: #fbbf24; border-color: rgba(245,158,11,0.3); }
     .status-select.closed { background: rgba(220,38,38,0.15); color: #f87171; border-color: rgba(220,38,38,0.3); }
 
     /* Пагинация */
-    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-top: 1px solid var(--border); background: var(--panel); }
-    .pagination button { padding: 6px 12px; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 4px; cursor: pointer; }
-    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* Правая колонка (Карта) */
-    .master-right {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--panel);
     }
-    #main-map { flex: 1; width: 100%; height: 100%; z-index: 1; }
+    .pagination button {
+      padding: 6px 14px; background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s;
+    }
+    .pagination button:hover:not(:disabled) { background: var(--border); }
+    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Панель массовых действий */
+    .bulk-panel {
+      display: none; padding: 10px 16px; background: rgba(37,99,235,0.1);
+      border-bottom: 1px solid var(--border); align-items: center; gap: 12px;
+    }
+    .bulk-panel span { font-weight: 600; font-size: 12px; color: var(--brand); }
+    .bulk-panel select {
+      padding: 6px; font-size: 12px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+    }
 
     /* Настройки */
-    .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 4000; display: none; backdrop-filter: blur(2px); }
+    .settings-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000;
+      display: none; backdrop-filter: blur(2px);
+    }
     .settings-overlay.open { display: block; }
-    .settings-panel { position: fixed; top: 0; right: -350px; width: 350px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); z-index: 4001; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 24px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); overflow-y: auto; }
+    .settings-panel {
+      position: fixed; top: 0; right: -350px; width: 350px; height: 100vh;
+      background: var(--panel); border-left: 1px solid var(--border);
+      z-index: 4001; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 24px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); overflow-y: auto;
+    }
     .settings-panel.open { right: 0; }
-    .settings-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; }
-    .settings-group { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-    .settings-group h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--muted); text-transform: uppercase; }
+    .settings-close {
+      position: absolute; top: 15px; right: 15px; background: none;
+      border: none; color: var(--muted); font-size: 24px; cursor: pointer; transition: color 0.2s;
+    }
+    .settings-close:hover { color: var(--err); }
+    .settings-group {
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .settings-group h3 {
+      margin: 0 0 12px 0; font-size: 12px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
 
-    /* Модалки (Импорт/Город) */
-    dialog.modal { width: min(600px, 95vw); border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); color: var(--text); padding: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    /* Модалки */
+    dialog.modal {
+      width: min(600px, 95vw); border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--panel); color: var(--text); padding: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
     dialog.modal::backdrop { background: rgba(0,0,0,0.7); }
-    .json-area { width: 100%; height: 250px; font-family: monospace; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 10px; border-radius: 8px; resize: vertical; }
+    .json-area {
+      width: 100%; height: 250px; font-family: monospace; font-size: 12px;
+      background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      padding: 12px; border-radius: 8px; resize: vertical;
+    }
+
+    /* Скроллбар */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
