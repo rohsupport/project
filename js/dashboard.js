@@ -127,7 +127,6 @@
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'complaints' }, payload => {
         UI.toast('Новая жалоба', 'warn');
         loadSummary(refs.widgetsEl);
-        // вставить сверху
         const tr = complaintRow(payload.new);
         const tbody = refs.complaintsTbody;
         tbody.prepend(tr);
@@ -151,31 +150,22 @@
 
   // Главный
   async function main() {
-    const content = UI.renderShell({
-      title: 'Дашборд',
-      profile: null,
-      active: 'dashboard.html'
-    });
-
+    // 1. СНАЧАЛА проверяем авторизацию и получаем профиль
     let profile;
     try {
       const r = await Auth.requireStaff();
       profile = r.profile;
-    } catch (e) { return; }
-
-    // Перерисуем topbar с реальным именем
-    const userBox = document.querySelector('.topbar__user');
-    if (userBox) {
-      userBox.innerHTML = '';
-      const nameEl = document.createElement('span');
-      nameEl.className = 'topbar__name';
-      nameEl.textContent = profile.full_name || profile.id.slice(0, 8);
-      const roleEl = document.createElement('span');
-      roleEl.className = 'badge badge--role badge--role-' + profile.role;
-      roleEl.textContent = UI.ROLE_LABEL[profile.role] || profile.role;
-      userBox.appendChild(nameEl);
-      userBox.appendChild(roleEl);
+    } catch (e) {
+      console.error('[dashboard] Auth error:', e);
+      return;
     }
+
+    // 2. Только после успешной проверки — рисуем оболочку
+    const content = UI.renderShell({
+      title: 'Дашборд',
+      profile: profile,
+      active: 'dashboard.html'
+    });
 
     // кнопка "Обновить"
     const head = document.createElement('div');
