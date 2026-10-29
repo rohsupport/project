@@ -54,9 +54,10 @@
   };
 
   // Отрисовка "оболочки": sidebar + topbar + main
-  // Использование: UI.renderShell({ title, profile, active, container })
   function renderShell({ title, profile, active }) {
     const current = (active || location.pathname.split('/').pop() || 'dashboard.html');
+    // защита: если профиль не передан — не падаем
+    const safeProfile = profile || { role: 'passenger', full_name: '' };
 
     // --- sidebar ---
     const sidebar = document.createElement('aside');
@@ -71,7 +72,7 @@
     const nav = document.createElement('nav');
     nav.className = 'sidebar__nav';
     NAV.forEach(item => {
-      if (item.admin && profile.role !== 'admin') return;
+      if (item.admin && safeProfile.role !== 'admin') return;
       const a = document.createElement('a');
       a.className = 'sidebar__link';
       if (item.href === current) a.classList.add('sidebar__link--active');
@@ -114,10 +115,10 @@
     userBox.className = 'topbar__user';
     const userName = document.createElement('span');
     userName.className = 'topbar__name';
-    userName.textContent = profile.full_name || profile.id.slice(0, 8);
+    userName.textContent = safeProfile.full_name || (safeProfile.id ? safeProfile.id.slice(0, 8) : '');
     const userRole = document.createElement('span');
-    userRole.className = `badge badge--role badge--role-${profile.role}`;
-    userRole.textContent = ROLE_LABEL[profile.role] || profile.role;
+    userRole.className = `badge badge--role badge--role-${safeProfile.role || 'passenger'}`;
+    userRole.textContent = ROLE_LABEL[safeProfile.role] || safeProfile.role || '';
     userBox.appendChild(userName);
     userBox.appendChild(userRole);
 
@@ -194,7 +195,6 @@
   }
 
   // ---------- MODAL-HELPER ----------
-  // Создаёт <dialog>, возвращает { dialog, body, close, open }
   function createModal({ title, onClose } = {}) {
     const dlg = document.createElement('dialog');
     dlg.className = 'modal';
