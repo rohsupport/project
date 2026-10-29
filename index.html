@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Вход — Админ-панель транспорта</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <form id="login-form" class="login-card" novalidate>
+      <h1>🚌 Админ-панель транспорта</h1>
+      <p class="sub">Вход для сотрудников</p>
+
+      <div class="form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="password">Пароль</label>
+          <input id="password" type="password" required autocomplete="current-password" />
+        </div>
+        <button id="login-btn" type="submit" class="btn btn--brand btn--block">Войти</button>
+      </div>
+
+      <div id="login-error" class="error"></div>
+
+      <div class="forgot">
+        <a href="#" id="forgot-link">Забыли пароль?</a>
+      </div>
+    </form>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+  (function () {
+    const form = document.getElementById('login-form');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const btn = document.getElementById('login-btn');
+    const errorBox = document.getElementById('login-error');
+    const forgot = document.getElementById('forgot-link');
+
+    // показать ошибку
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.add('show');
+    }
+    function clearError() {
+      errorBox.textContent = '';
+      errorBox.classList.remove('show');
+    }
+
+    // проверка сессии при загрузке
+    (async () => {
+      try {
+        const session = await Auth.getSession();
+        if (!session) return;
+        const profile = await Auth.getProfile(session.user.id);
+        if (profile && !profile.is_blocked &&
+            Auth.STAFF_ROLES.includes(profile.role)) {
+          location.href = 'dashboard.html';
+        }
+      } catch (e) {
+        // игнорируем, показываем форму
+      }
+    })();
+
+    // логин
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      if (!email.value || !password.value) {
+        showError('Заполните email и пароль');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Вход...';
+      try {
+        await Auth.signIn(email.value.trim(), password.value);
+        const session = await Auth.getSession();
+        if (!session) throw new Error('Сессия не создана');
+
+        const profile = await Auth.getProfile(session.user.id);
+        if (!profile) {
+          await window.sb.auth.signOut();
+          showError('Профиль не найден');
+          return;
+        }
+        if (profile.is_blocked) {
+          await window.sb.auth.signOut();
+          showError('Аккаунт заблокирован');
+          return;
+        }
+        if (!Auth.STAFF_ROLES.includes(profile.role)) {
+          await window.sb.auth.signOut();
+          showError('Доступ запрещён. Обратитесь к администратору');
+          return;
+        }
+        location.href = 'dashboard.html';
+      } catch (err) {
+        showError(err.message || 'Ошибка входа');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Войти';
+      }
+    });
+
+    // забыли пароль
+    forgot.addEventListener('click', (e) => {
+      e.preventDefault();
+      const dlg = document.createElement('dialog');
+      dlg.className = 'modal';
+      dlg.innerHTML = `
+        <div class="modal__header">
+          <h2 class="modal__title">Сброс пароля</h2>
+          <button class="modal__close" aria-label="Закрыть">×</button>
+        </div>
+        <div class="modal__body">
+          <div class="form">
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="reset-email" value="${email.value.trim()}" />
+            </div>
+            <div class="modal__actions">
+              <button class="btn" id="reset-cancel">Отмена</button>
+              <button class="btn btn--brand" id="reset-send">Отправить ссылку</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(dlg);
+      dlg.showModal();
+
+      const closeBtn = dlg.querySelector('.modal__close');
+      const cancelBtn = dlg.querySelector('#reset-cancel');
+      const sendBtn = dlg.querySelector('#reset-send');
+      const resetEmail = dlg.querySelector('#reset-email');
+      const close = () => { dlg.close(); dlg.remove(); };
+      closeBtn.addEventListener('click', close);
+      cancelBtn.addEventListener('click', close);
+
+      sendBtn.addEventListener('click', async () => {
+        const em = resetEmail.value.trim();
+        if (!em) { UI.toast('Введите email', 'err'); return; }
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Отправка...';
+        try {
+          const { error } = await window.sb.auth.resetPasswordForEmail(em, {
+            redirectTo: location.origin + location.pathname.replace('index.html', 'profile.html')
+          });
+          if (error) throw error;
+          UI.toast('Письмо отправлено', 'ok');
+          close();
+        } catch (err) {
+          UI.toast(err.message || 'Ошибка', 'err');
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Отправить ссылку';
+        }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
