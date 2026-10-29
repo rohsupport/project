@@ -1,124 +1,141 @@
 // ============================================================
-// Полноценный модуль остановок: 1/3 форма, 2/3 карта, JSON-импорт
+// Остановки: Реестр с сортировкой + Полноэкранное добавление
 // ============================================================
 (function () {
   let allStops = [];
   let map = null;
   let marker = null;
   let geocoder = null;
-  
-  // DOM-элементы
-  let formPanel, jsonPanel, recentPanel, listPanel;
-  let form, jsonArea, jsonBtn, recentList, stopsList;
-  let coordsInput, nameInput, addressInput, landmarkInput, activeCheck, previewCode;
+
+  // DOM-контейнеры
+  let listView, addView, tbodyList, recentList;
+  let currentSort = { field: 'stop_code', dir: 'desc' };
+
+  // Координаты для Сардинии (Центр острова)
+  const SARDINIA_CENTER = [40.1209, 9.0129];
+  const SARDINIA_ZOOM = 8;
 
   // ========== 1. Загрузка данных ==========
   async function load() {
     try {
       const { data, error } = await window.sb
         .from('stops')
-        .select('*')
-        .order('stop_code', { ascending: false }); // Сначала новые
+        .select('*');
       if (error) throw error;
-      
       allStops = data || [];
-      renderStopsList();
-      updatePreviewCode();
+      renderTable();
     } catch (err) {
       UI.toast('Ошибка загрузки: ' + err.message, 'err');
     }
   }
 
-  // Обновляем превью следующего кода
-  function updatePreviewCode() {
-    if (allStops.length === 0) {
-      previewCode.textContent = '000001';
+  // ========== 2. Рендер реестра с сортировкой ==========
+  function renderTable() {
+    const q = document.getElementById('search-input').value.trim().toLowerCase();
+    
+    // Фильтрация
+    let filtered = allStops.filter(s => {
+      if (!q) return true;
+      return `${s.name} ${s.address || ''} ${s.city || ''} ${s.stop_code || ''}`.toLowerCase().includes(q);
+    });
+
+    // Сортировка
+    filtered.sort((a, b) => {
+      let valA = a[currentSort.field] || '';
+      let valB = b[currentSort.field] || '';
+      
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+      if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Обновляем заголовки
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.classList.remove('sort-asc', 'sort-desc');
+      if (th.dataset.field === currentSort.field) {
+        th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      }
+    });
+
+    // Рендер строк
+    tbodyList.innerHTML = '';
+    if (filtered.length === 0) {
+      tbodyList.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Ничего не найдено</td></tr>';
       return;
     }
-    // Находим максимальный код и прибавляем 1
-    const maxCode = allStops.reduce((max, s) => {
-      const n = parseInt(s.stop_code || '0', 10);
-      return n > max ? n : max;
-    }, 0);
-    previewCode.textContent = String(maxCode + 1).padStart(6, '0');
-  }
 
-  // ========== 2. Рендер списков ==========
-  function renderStopsList() {
-    stopsList.innerHTML = '';
-    
-    const recent = allStops.slice(0, 5);
-    recentList.innerHTML = '';
-    
-    if (recent.length === 0) {
-      recentList.innerHTML = '<div style="color:var(--muted);font-size:12px;">Пока нет остановок</div>';
-    } else {
-      recent.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'recent-item';
-        div.innerHTML = `
-          <div>
-            <div style="font-weight:500;">${s.name}</div>
-            <div style="font-size:11px;color:var(--muted);">${s.address || 'Без адреса'}</div>
-          </div>
-          <div class="recent-code">${s.stop_code}</div>
-        `;
-        div.addEventListener('click', () => showOnMap(s));
-        recentList.appendChild(div);
-      });
-    }
-
-    if (allStops.length === 0) {
-      stopsList.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px;">Нет остановок в базе</div>';
-      return;
-    }
-    
-    const fragment = document.createDocumentFragment();
-    allStops.forEach(s => {
+    filtered.forEach(s => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><span class="badge badge--muted" style="font-family:monospace;">${s.stop_code}</span></td>
         <td>${s.name}</td>
-        <td>${s.address || '—'}</td>
-        <td>${s.latitude.toFixed(5)}, ${s.longitude.toFixed(5)}</td>
+        <td>${s.city || '—'}</td>
+        <td>${s.address || '—'}${s.landmark ? `<br><small style="color:var(--muted)">📍 ${s.landmark}</small>` : ''}</td>
+        <td style="font-family:monospace; font-size:12px; color:var(--muted);">${s.latitude.toFixed(5)}, ${s.longitude.toFixed(5)}</td>
+        <td>
+          <button class="btn btn--sm btn--danger delete-btn" data-id="${s.id}">Удалить</button>
+        </td>
       `;
-      tr.style.cursor = 'pointer';
-      tr.addEventListener('click', () => showOnMap(s));
-      fragment.appendChild(tr);
+      
+      tr.querySelector('.delete-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Удалить ${s.stop_code}?`)) return;
+        await window.sb.from('stops').delete().eq('id', s.id);
+        await load();
+      });
+      
+      tbodyList.appendChild(tr);
     });
-    stopsList.appendChild(fragment);
   }
 
-  // Показать остановку на карте
-  function showOnMap(s) {
-    if (!map) return;
-    map.setView([s.latitude, s.longitude], 17);
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([s.latitude, s.longitude]).addTo(map);
-    marker.bindPopup(`<b>${s.name}</b><br>${s.stop_code}`).openPopup();
+  // ========== 3. Переключение видов ==========
+  function showList() {
+    addView.style.display = 'none';
+    listView.style.display = 'block';
+    if (map) { map.remove(); map = null; marker = null; }
   }
 
-  // ========== 3. Карта ==========
+  function showAdd() {
+    listView.style.display = 'none';
+    addView.style.display = 'flex';
+    
+    // Сброс формы
+    document.getElementById('add-form').reset();
+    if (marker) { map.removeLayer(marker); marker = null; }
+    
+    // Инициализация карты (нужна задержка для отрисовки DOM)
+    setTimeout(() => {
+      if (!map) {
+        initMap();
+      } else {
+        map.invalidateSize();
+        map.setView(SARDINIA_CENTER, SARDINIA_ZOOM);
+      }
+    }, 100);
+  }
+
+  // ========== 4. Карта ==========
   function initMap() {
-    map = L.map('main-map').setView([55.7558, 37.6173], 12);
+    map = L.map('page-map').setView(SARDINIA_CENTER, SARDINIA_ZOOM);
+    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OSM'
     }).addTo(map);
 
     geocoder = L.Control.geocoder({
       defaultMarkGeocode: false,
-      placeholder: 'Найти адрес...',
-      errorMessage: 'Адрес не найден'
+      placeholder: 'Найти город или улицу...',
     }).on('markgeocode', (e) => {
       const center = e.geocode.center;
-      map.setView(center, 16);
+      map.setView(center, 15);
       placeMarker(center.lat, center.lng);
-      updateFormCoords(center.lat, center.lng);
     }).addTo(map);
 
     map.on('click', (e) => {
       placeMarker(e.latlng.lat, e.latlng.lng);
-      updateFormCoords(e.latlng.lat, e.latlng.lng);
     });
   }
 
@@ -127,103 +144,126 @@
     marker = L.marker([lat, lng], { draggable: true }).addTo(map);
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
-      updateFormCoords(pos.lat, pos.lng);
+      updateCoordsInput(pos.lat, pos.lng);
     });
+    updateCoordsInput(lat, lng);
   }
 
-  function updateFormCoords(lat, lng) {
-    if (coordsInput) coordsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  function updateCoordsInput(lat, lng) {
+    const input = document.getElementById('coords-input');
+    if (input) input.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   }
 
-  // ========== 4. Форма добавления ==========
-  function buildForm() {
-    form = document.createElement('form');
-    form.className = 'form';
-    form.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="margin:0;">Новая остановка</h3>
-        <div style="font-size:12px; color:var(--muted);">
-          Код: <span id="preview-code" style="font-family:monospace; color:var(--brand); font-weight:bold;">...</span>
+  // ========== 5. Построение полноэкранного вида ==========
+  function buildAddView() {
+    addView = document.createElement('div');
+    addView.className = 'fullscreen-add';
+    addView.style.display = 'none';
+
+    // 30% - Форма
+    const formCol = document.createElement('div');
+    formCol.className = 'fullscreen-form-col';
+    formCol.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="margin:0; font-size:18px;">Новая остановка</h2>
+        <button type="button" class="btn btn--sm" id="back-btn">← Назад к реестру</button>
+      </div>
+
+      <form id="add-form" class="form" style="flex:1; display:flex; flex-direction:column; gap:12px;">
+        <div class="field">
+          <label>Код (автоматически)</label>
+          <input id="preview-code" readonly style="font-family:monospace; font-weight:bold; color:var(--brand);" />
         </div>
-      </div>
-      
-      <div class="field">
-        <label>Название *</label>
-        <input name="name" required maxlength="200" placeholder="Например: ул. Ленина" />
-      </div>
-      
-      <div class="field">
-        <label>Адрес</label>
-        <input name="address" maxlength="300" placeholder="Улица, дом" />
-      </div>
-      
-      <div class="field">
-        <label>Ориентир</label>
-        <input name="landmark" maxlength="300" placeholder="Напротив ТЦ" />
-      </div>
-      
-      <div class="field">
-        <label>Координаты *</label>
-        <div style="display:flex; gap:6px;">
-          <input name="coords" id="coords-input" required placeholder="55.7558, 37.6173" style="font-family:monospace; font-size:12px;" />
-          <button type="button" class="btn btn--sm" id="paste-btn" title="Вставить">📋</button>
+        <div class="field">
+          <label>Название остановки *</label>
+          <input name="name" required maxlength="200" placeholder="Например: Via Roma" />
         </div>
-        <small style="color:var(--muted); font-size:11px;">Кликните по карте</small>
+        <div class="field">
+          <label>Город / Район</label>
+          <input name="city" maxlength="100" placeholder="Например: Кальяри" />
+        </div>
+        <div class="field">
+          <label>Адрес (улица, дом)</label>
+          <input name="address" maxlength="300" placeholder="Via Roma, 10" />
+        </div>
+        <div class="field">
+          <label>Ориентир</label>
+          <input name="landmark" maxlength="300" placeholder="Напротив мэрии" />
+        </div>
+        <div class="field">
+          <label>Координаты *</label>
+          <input name="coords" id="coords-input" required placeholder="40.1209, 9.0129" style="font-family:monospace; font-size:12px;" />
+          <small style="color:var(--muted); font-size:11px;">Кликните по карте справа</small>
+        </div>
+        
+        <button type="submit" class="btn btn--brand" id="save-btn" style="margin-top:10px;">Добавить остановку</button>
+      </form>
+
+      <div class="recent-box">
+        <h4 style="margin:0 0 8px; font-size:13px; color:var(--muted);">Последние добавленные:</h4>
+        <div id="recent-list" style="max-height:150px; overflow-y:auto;"></div>
       </div>
-      
-      <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
-        <input id="stop-active" name="is_active" type="checkbox" style="width:auto;" checked />
-        <label for="stop-active" style="margin:0; font-size:13px;">Активна</label>
-      </div>
-      
-      <button type="submit" class="btn btn--brand" id="save-btn">Добавить остановку</button>
     `;
-    formPanel.appendChild(form);
 
-    coordsInput = form.querySelector('#coords-input');
-    const pasteBtn = form.querySelector('#paste-btn');
-    const saveBtn = form.querySelector('#save-btn');
+    // 70% - Карта
+    const mapCol = document.createElement('div');
+    mapCol.className = 'fullscreen-map-col';
+    mapCol.innerHTML = `<div id="page-map"></div>`;
 
-    coordsInput.addEventListener('change', () => {
-      const parsed = parseCoords(coordsInput.value);
+    addView.appendChild(formCol);
+    addView.appendChild(mapCol);
+
+    // Обработчики
+    formCol.querySelector('#back-btn').addEventListener('click', showList);
+    
+    const form = formCol.querySelector('#add-form');
+    form.querySelector('#coords-input').addEventListener('change', (e) => {
+      const parsed = parseCoords(e.target.value);
       if (parsed && map) {
-        map.setView([parsed.lat, parsed.lng], 16);
+        map.setView([parsed.lat, parsed.lng], 15);
         placeMarker(parsed.lat, parsed.lng);
       }
-    });
-
-    pasteBtn.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        coordsInput.value = text;
-        coordsInput.dispatchEvent(new Event('change'));
-      } catch (e) { UI.toast('Разрешите доступ к буферу', 'err'); }
     });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
-      const parsed = parseCoords(coordsInput.value);
-      if (!parsed) { UI.toast('Неверные координаты', 'err'); return; }
-
+      const parsed = parseCoords(fd.get('coords'));
+      
+      if (!parsed) { UI.toast('Неверный формат координат', 'err'); return; }
+      
+      const saveBtn = form.querySelector('#save-btn');
       saveBtn.disabled = true;
       saveBtn.textContent = 'Сохранение...';
 
       try {
-        const { error } = await window.sb.from('stops').insert({
-          name: String(fd.get('name') || '').trim(),
-          address: String(fd.get('address') || '').trim() || null,
-          landmark: String(fd.get('landmark') || '').trim() || null,
+        const { data, error } = await window.sb.from('stops').insert({
+          name: fd.get('name'),
+          city: fd.get('city') || null,
+          address: fd.get('address') || null,
+          landmark: fd.get('landmark') || null,
           latitude: parsed.lat,
           longitude: parsed.lng,
-          is_active: !!fd.get('is_active')
-        });
+          is_active: true
+        }).select().single();
+
         if (error) throw error;
         
-        UI.toast('Остановка добавлена', 'ok');
+        UI.toast(`Добавлена: ${data.stop_code}`, 'ok');
+        
+        // Добавляем в "Последние"
+        addRecent(data);
+        
+        // Очищаем форму для следующей
         form.reset();
         if (marker) { map.removeLayer(marker); marker = null; }
-        await load();
+        
+        // Обновляем превью кода
+        updatePreviewCode();
+        
+        // Обновляем основной реестр в фоне
+        load();
+        
       } catch (err) {
         UI.toast(err.message, 'err');
       } finally {
@@ -231,59 +271,89 @@
         saveBtn.textContent = 'Добавить остановку';
       }
     });
+
+    return addView;
   }
 
-  // ========== 5. JSON-импорт ==========
-  const JSON_TEMPLATE = `[
+  function addRecent(stop) {
+    const list = document.getElementById('recent-list');
+    const div = document.createElement('div');
+    div.className = 'recent-item';
+    div.innerHTML = `<span>${stop.name}</span> <span class="badge badge--muted" style="font-family:monospace;">${stop.stop_code}</span>`;
+    list.prepend(div);
+  }
+
+  function updatePreviewCode() {
+    const maxCode = allStops.reduce((max, s) => {
+      const n = parseInt(s.stop_code || '0', 10);
+      return n > max ? n : max;
+    }, 0);
+    document.getElementById('preview-code').value = String(maxCode + 1).padStart(6, '0');
+  }
+
+  // ========== 6. Массовое добавление ==========
+  function openMassAdd() {
+    const m = UI.createModal({ title: 'Массовое добавление (JSON)' });
+    m.dialog.style.width = 'min(700px, 95vw)';
+
+    const JSON_EXAMPLE = `[
   {
-    "name": "Площадь Победы",
-    "address": "ул. Ленина, 10",
-    "landmark": "У фонтана",
-    "latitude": 55.7558,
-    "longitude": 37.6173
+    "name": "Piazza Matteotti",
+    "city": "Кальяри",
+    "address": "Piazza Matteotti",
+    "landmark": "У ратуши",
+    "latitude": 39.2165,
+    "longitude": 9.1142
   },
   {
-    "name": "Центральный рынок",
-    "latitude": 55.7602,
-    "longitude": 37.6205
+    "name": "Stazione FS",
+    "city": "Кальяри",
+    "latitude": 39.2151,
+    "longitude": 9.1086
   }
 ]`;
 
-  function buildJsonPanel() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'form';
-    wrapper.innerHTML = `
-      <h3 style="margin:0;">Массовое добавление (JSON)</h3>
-      <small style="color:var(--muted); font-size:11px; margin-bottom:8px; display:block;">
-        Вставьте массив объектов. Обязательно: name, latitude, longitude.
-      </small>
-      <textarea class="json-textarea" id="json-input" placeholder="${JSON_TEMPLATE.replace(/</g, '&lt;')}"></textarea>
-      <div style="display:flex; gap:8px; margin-top:8px;">
-        <button type="button" class="btn btn--sm" id="json-example">Пример</button>
-        <button type="button" class="btn btn--sm btn--brand" id="json-load" style="flex:1;">Загрузить</button>
+    const form = document.createElement('form');
+    form.className = 'form';
+    form.innerHTML = `
+      <div class="field">
+        <label>Вставьте JSON-массив остановок</label>
+        <textarea id="json-area" style="height:250px; font-family:monospace; font-size:12px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:8px; resize:vertical;" placeholder='[{"name": "..."}]'></textarea>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn" id="ex-btn">Показать пример</button>
+        <button type="button" class="btn" id="copy-btn">Скопировать пример</button>
+        <button type="submit" class="btn btn--brand" style="flex:1;" id="load-btn">Загрузить</button>
       </div>
     `;
-    jsonPanel.appendChild(wrapper);
+    m.body.appendChild(form);
 
-    jsonArea = wrapper.querySelector('#json-input');
-    const exampleBtn = wrapper.querySelector('#json-example');
-    const loadBtn = wrapper.querySelector('#json-load');
+    const area = form.querySelector('#json-area');
+    const loadBtn = form.querySelector('#load-btn');
 
-    exampleBtn.addEventListener('click', () => {
-      jsonArea.value = JSON_TEMPLATE;
-      jsonArea.classList.remove('error');
+    form.querySelector('#ex-btn').addEventListener('click', () => {
+      area.value = JSON_EXAMPLE;
     });
 
-    loadBtn.addEventListener('click', async () => {
-      const raw = jsonArea.value.trim();
-      if (!raw) { UI.toast('Вставьте JSON', 'err'); return; }
+    form.querySelector('#copy-btn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(JSON_EXAMPLE);
+        UI.toast('Пример скопирован в буфер', 'ok');
+      } catch (e) {
+        UI.toast('Не удалось скопировать', 'err');
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const raw = area.value.trim();
+      if (!raw) return;
 
       let arr;
       try {
         arr = JSON.parse(raw);
-        if (!Array.isArray(arr)) throw new Error('Ожидается массив [...]');
+        if (!Array.isArray(arr)) throw new Error('Ожидается массив [ ... ]');
       } catch (err) {
-        jsonArea.classList.add('error');
         UI.toast('Ошибка JSON: ' + err.message, 'err');
         return;
       }
@@ -297,11 +367,12 @@
         }
         valid.push({
           name: String(item.name),
+          city: item.city || null,
           address: item.address || null,
           landmark: item.landmark || null,
-          latitude: Number(item.latitude),
-          longitude: Number(item.longitude),
-          is_active: item.is_active !== false
+          latitude: item.latitude,
+          longitude: item.longitude,
+          is_active: true
         });
       }
 
@@ -312,11 +383,9 @@
       try {
         const { error } = await window.sb.from('stops').insert(valid);
         if (error) throw error;
-        UI.toast(`Добавлено: ${valid.length} остановок`, 'ok');
-        jsonArea.value = '';
-        jsonArea.classList.remove('error');
+        UI.toast(`Добавлено ${valid.length} остановок`, 'ok');
+        m.close();
         await load();
-        switchTab('list');
       } catch (err) {
         UI.toast(err.message, 'err');
       } finally {
@@ -326,7 +395,7 @@
     });
   }
 
-  // ========== 6. Парсинг координат ==========
+  // ========== 7. Парсер координат ==========
   function parseCoords(str) {
     if (!str) return null;
     const clean = String(str).replace(/[^\d.,\-\s]/g, ' ').trim();
@@ -339,144 +408,77 @@
     return { lat, lng };
   }
 
-  // ========== 7. Вкладки в левой панели ==========
-  let tabsContainer, tabButtons, tabContents;
-  function buildTabs() {
-    tabsContainer = document.createElement('div');
-    tabsContainer.className = 'tabs';
-    tabsContainer.innerHTML = `
-      <button class="tab tab--active" data-tab="form">Одна</button>
-      <button class="tab" data-tab="json">Массово</button>
-      <button class="tab" data-tab="recent">Последние</button>
-    `;
-    formPanel = document.createElement('div');
-    jsonPanel = document.createElement('div');
-    recentPanel = document.createElement('div');
-    
-    formPanel.style.display = 'block';
-    jsonPanel.style.display = 'none';
-    recentPanel.style.display = 'none';
-
-    tabContents = { form: formPanel, json: jsonPanel, recent: recentPanel };
-    
-    tabsContainer.addEventListener('click', (e) => {
-      const btn = e.target.closest('.tab');
-      if (!btn) return;
-      switchTab(btn.dataset.tab);
-    });
-
-    return tabsContainer;
-  }
-
-  function switchTab(name) {
-    Object.keys(tabContents).forEach(k => {
-      tabContents[k].style.display = k === name ? 'block' : 'none';
-    });
-    tabsContainer.querySelectorAll('.tab').forEach(b => {
-      b.classList.toggle('tab--active', b.dataset.tab === name);
-    });
-  }
-
-  // ========== 8. Главный экран ==========
+  // ========== 8. Главный экран (Реестр) ==========
   async function main() {
     let profile;
     try { ({ profile } = await Auth.requireStaff()); } catch (e) { return; }
 
     const content = UI.renderShell({ title: 'Остановки', profile, active: 'stops.html' });
 
-    // Тулбар сверху
-    const toolbar = document.createElement('div');
-    toolbar.className = 'toolbar';
-    toolbar.innerHTML = `
-      <div class="field field--grow" style="margin:0;">
-        <input id="global-search" placeholder="Поиск по названию, адресу или коду..." />
+    // --- РЕЕСТР (список) ---
+    listView = document.createElement('div');
+    listView.innerHTML = `
+      <div class="toolbar">
+        <button class="btn btn--brand" id="btn-add">➕ Добавить остановку</button>
+        <button class="btn" id="btn-mass">📦 Массовое добавление</button>
+        <div class="field field--grow" style="margin:0;">
+          <input id="search-input" placeholder="Поиск по названию, коду или городу..." />
+        </div>
+        <span id="count-badge" class="muted"></span>
       </div>
-      <span id="count-badge" class="muted"></span>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-field="stop_code">Код</th>
+              <th class="sortable" data-field="name">Название</th>
+              <th class="sortable" data-field="city">Город</th>
+              <th class="sortable" data-field="address">Адрес / Ориентир</th>
+              <th>Координаты</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-list"></tbody>
+        </table>
+      </div>
     `;
-    content.appendChild(toolbar);
+    content.appendChild(listView);
 
-    // Основной лэйаут
-    const layout = document.createElement('div');
-    layout.className = 'stops-layout';
-
-    // Левая панель
-    const left = document.createElement('div');
-    left.className = 'stops-panel';
+    tbodyList = listView.querySelector('#tbody-list');
     
-    // Карта
-    const right = document.createElement('div');
-    right.className = 'stops-map-wrapper';
-    right.innerHTML = '<div id="main-map"></div>';
-
-    layout.appendChild(left);
-    layout.appendChild(right);
-    content.appendChild(layout);
-
-    // Карта
-    setTimeout(initMap, 100);
-
-    // Вкладки
-    left.appendChild(buildTabs());
-    left.appendChild(formPanel);
-    left.appendChild(jsonPanel);
-    left.appendChild(recentPanel);
-
-    // Строим содержимое вкладок
-    buildForm();
-    buildJsonPanel();
+    // Слушатели
+    listView.querySelector('#btn-add').addEventListener('click', showAdd);
+    listView.querySelector('#btn-mass').addEventListener('click', openMassAdd);
     
-    recentList = document.createElement('div');
-    recentList.className = 'recent-list';
-    recentPanel.innerHTML = `<h3 style="margin:0 0 12px;">Последние добавленные</h3>`;
-    recentPanel.appendChild(recentList);
-
-    // Список всех (внизу страницы)
-    const listWrap = document.createElement('div');
-    listWrap.className = 'table-wrap';
-    listWrap.style.marginTop = '16px';
-    listWrap.innerHTML = `
-      <table>
-        <thead>
-          <tr><th>Код</th><th>Название</th><th>Адрес</th><th>Координаты</th></tr>
-        </thead>
-        <tbody id="stops-list"></tbody>
-      </table>
-    `;
-    content.appendChild(listWrap);
-    stopsList = listWrap.querySelector('#stops-list');
-
-    // Поиск
-    const searchInput = toolbar.querySelector('#global-search');
-    const countBadge = toolbar.querySelector('#count-badge');
-    searchInput.addEventListener('input', UI.debounce(() => {
-      const q = searchInput.value.trim().toLowerCase();
-      const filtered = q ? allStops.filter(s => 
-        `${s.name} ${s.address||''} ${s.stop_code||''}`.toLowerCase().includes(q)
-      ) : allStops;
-      
-      countBadge.textContent = `Найдено: ${filtered.length}`;
-      
-      // Обновляем основную таблицу
-      stopsList.innerHTML = '';
-      filtered.forEach(s => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="badge badge--muted" style="font-family:monospace;">${s.stop_code}</span></td>
-          <td>${s.name}</td>
-          <td>${s.address || '—'}</td>
-          <td style="font-family:monospace; font-size:12px; color:var(--muted);">${s.latitude.toFixed(5)}, ${s.longitude.toFixed(5)}</td>
-        `;
-        tr.style.cursor = 'pointer';
-        tr.addEventListener('click', () => showOnMap(s));
-        stopsList.appendChild(tr);
-      });
+    listView.querySelector('#search-input').addEventListener('input', UI.debounce(() => {
+      renderTable();
+      const count = tbodyList.children.length;
+      listView.querySelector('#count-badge').textContent = `Найдено: ${count}`;
     }, 300));
 
-    previewCode = document.createElement('span'); // временный, реально ищется в form
+    // Сортировка
+    listView.querySelectorAll('th.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const field = th.dataset.field;
+        if (currentSort.field === field) {
+          currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort.field = field;
+          currentSort.dir = 'asc';
+        }
+        renderTable();
+      });
+    });
+
+    // --- ДОБАВЛЕНИЕ (Полный экран) ---
+    content.appendChild(buildAddView());
+
+    // Загрузка данных
     await load();
+    listView.querySelector('#count-badge').textContent = `Всего: ${allStops.length}`;
     
-    // Превью-код внутри формы
-    previewCode = form.querySelector('#preview-code');
+    // Обновляем превью кода при входе
     updatePreviewCode();
   }
 
