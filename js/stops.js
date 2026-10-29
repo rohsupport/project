@@ -1,47 +1,34 @@
 (function () {
   'use strict';
 
-  // ==========================================
-  // 1. СОСТОЯНИЕ
-  // ==========================================
   let allStops = [];
   let allCities = [];
   let map = null;
   let addMarker = null;
   let editId = null;
   let isProcessing = false;
-  let resizeObserver = null;
 
-  // Состояние таблицы
   let currentPage = 1;
   const itemsPerPage = 20;
   let sortField = 'stop_code';
   let sortDir = 'desc';
   let selectedIds = new Set();
 
-  // Фильтры
   let filterQuery = '';
   let filterCity = 'all';
   let filterStatus = 'all';
 
-  // Настройки
   let settings = {
     showCoords: true,
-    mapCenter: [40.1209, 9.0129], // Уджан / Сардиния
+    mapCenter: [40.1209, 9.0129],
     mapZoom: 8
   };
 
-  // DOM
-  let contentArea;
-
-  // ==========================================
-  // 2. УТИЛИТЫ
-  // ==========================================
   function loadSettings() {
-    const s = localStorage.getItem('stops_settings_v11');
+    const s = localStorage.getItem('stops_settings_v12');
     if (s) { try { settings = { ...settings, ...JSON.parse(s) }; } catch(e){} }
   }
-  function saveSettings() { localStorage.setItem('stops_settings_v11', JSON.stringify(settings)); }
+  function saveSettings() { localStorage.setItem('stops_settings_v12', JSON.stringify(settings)); }
 
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -49,7 +36,7 @@
   }
 
   // ==========================================
-  // 3. ЗАГРУЗКА ДАННЫХ
+  // ЗАГРУЗКА ДАННЫХ
   // ==========================================
   async function loadData() {
     if (isProcessing) return;
@@ -68,6 +55,11 @@
       renderCitySelects();
       renderTable();
       renderMapMarkers();
+      
+      // ФИКС ИСЧЕЗНОВЕНИЯ КАРТЫ (пересчет после отрисовки таблицы)
+      if (map) {
+        setTimeout(() => map.invalidateSize(), 300);
+      }
     } catch (err) {
       UI.toast('Ошибка загрузки: ' + err.message, 'err');
     } finally {
@@ -95,13 +87,12 @@
   }
 
   // ==========================================
-  // 4. ТАБЛИЦА
+  // ТАБЛИЦА
   // ==========================================
   function renderTable() {
     const tbody = document.getElementById('tbody-list');
     if (!tbody) return;
 
-    // Фильтрация
     let filtered = allStops.filter(s => {
       const q = filterQuery.toLowerCase();
       const matchQ = !q || (s.name||'').toLowerCase().includes(q) || (s.stop_code||'').includes(q) || (s.address||'').toLowerCase().includes(q);
@@ -110,7 +101,6 @@
       return matchQ && matchSt && matchCt;
     });
 
-    // Сортировка
     filtered.sort((a, b) => {
       let valA = a[sortField] || '';
       let valB = b[sortField] || '';
@@ -121,13 +111,11 @@
       return 0;
     });
 
-    // Пагинация
     const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     const startIdx = (currentPage - 1) * itemsPerPage;
     const pageItems = filtered.slice(startIdx, startIdx + itemsPerPage);
 
-    // Отрисовка
     tbody.innerHTML = '';
     if (pageItems.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">Ничего не найдено</td></tr>';
@@ -235,7 +223,7 @@
   }
 
   // ==========================================
-  // 5. ФОРМА
+  // ФОРМА
   // ==========================================
   function resetForm() {
     editId = null;
@@ -281,10 +269,15 @@
   }
 
   // ==========================================
-  // 6. КАРТА
+  // КАРТА
   // ==========================================
   function initMap() {
     if (map) return;
+    if (typeof L === 'undefined') {
+      UI.toast('Ошибка: библиотека карт (Leaflet) не загрузилась. Проверьте интернет.', 'err');
+      return;
+    }
+    
     const container = document.getElementById('main-map');
     if (!container) return;
 
@@ -316,12 +309,11 @@
       });
     });
 
-    // ФИКС ИСЧЕЗНОВЕНИЯ КАРТЫ (ResizeObserver)
+    // Постоянный мониторинг размера контейнера (чтобы карта не исчезала)
     if (window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(() => {
+      new ResizeObserver(() => {
         if (map) map.invalidateSize();
-      });
-      resizeObserver.observe(container);
+      }).observe(container);
     } else {
       window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
     }
@@ -360,7 +352,7 @@
   }
 
   // ==========================================
-  // 7. УДАЛЕНИЕ
+  // УДАЛЕНИЕ
   // ==========================================
   async function safeDelete(stop) {
     if (!confirm(`Удалить остановку "${stop.name}"?`)) return;
@@ -383,15 +375,15 @@
   }
 
   // ==========================================
-  // 8. МОДАЛКИ (Импорт)
+  // МОДАЛКИ
   // ==========================================
   function openImportModal() {
     const m = UI.createModal({ title: 'Импорт JSON' });
     m.body.innerHTML = `
       <div class="form-group">
-        <textarea class="json-area" id="json-input" placeholder='[{"name": "Остановка", "city_name": "Уджан", "latitude": 40.12, "longitude": 9.01}]'></textarea>
+        <textarea class="json-area" id="json-input" placeholder='[{"name": "Остановка", "city_name": "Уджан", "latitude": 40.12, "longitude": 9.01}]' style="width:100%; height:200px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:8px;"></textarea>
       </div>
-      <div class="modal__actions">
+      <div class="modal__actions" style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
         <button class="btn" id="cancel-json">Отмена</button>
         <button class="btn btn--brand" id="run-import">Импортировать</button>
       </div>
@@ -421,7 +413,7 @@
   }
 
   // ==========================================
-  // 9. НАСТРОЙКИ
+  // НАСТРОЙКИ
   // ==========================================
   function buildSettings() {
     const btn = document.createElement('button');
@@ -432,20 +424,20 @@
     const overlay = document.createElement('div'); overlay.className = 'settings-overlay'; document.body.appendChild(overlay);
     const panel = document.createElement('div'); panel.className = 'settings-panel';
     panel.innerHTML = `
-      <button class="settings-close" id="close-settings">&times;</button>
+      <button class="settings-close" id="close-settings" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;">&times;</button>
       <h2 style="margin-top:0; font-size:20px;">Настройки</h2>
       
-      <div class="settings-group">
-        <h3>Интерфейс</h3>
+      <div class="settings-group" style="margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3 style="font-size:12px; color:var(--muted); text-transform:uppercase;">Интерфейс</h3>
         <label style="display:block; margin-bottom:12px;"><input type="checkbox" id="set-coords" ${settings.showCoords ? 'checked':''}/> Показывать координаты</label>
       </div>
-      <div class="settings-group">
-        <h3>Карта</h3>
+      <div class="settings-group" style="margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3 style="font-size:12px; color:var(--muted); text-transform:uppercase;">Карта</h3>
         <p style="font-size:12px; color:var(--muted); margin-top:0;">Переместите карту в нужное место и нажмите кнопку ниже, чтобы сохранить стартовый вид.</p>
         <button class="btn btn--brand" id="set-center" style="width:100%; margin-bottom:8px;">Зафиксировать вид</button>
       </div>
-      <div class="settings-group">
-        <h3>Данные</h3>
+      <div class="settings-group" style="margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <h3 style="font-size:12px; color:var(--muted); text-transform:uppercase;">Данные</h3>
         <button class="btn" id="btn-import" style="width:100%; margin-bottom:8px;">Импорт JSON</button>
         <button class="btn" id="btn-export" style="width:100%;">Экспорт CSV</button>
       </div>
@@ -478,7 +470,7 @@
   }
 
   // ==========================================
-  // 10. ИНЖЕКТ HTML
+  // ИНЖЕКТ HTML И СТИЛИ
   // ==========================================
   function injectHTML() {
     if (!window.UI || !window.UI.renderShell) return false;
@@ -486,34 +478,56 @@
     const content = window.UI.renderShell({ title: 'Остановки', profile: profile, active: 'stops.html' });
     content.innerHTML = '';
 
+    // ЖЕСТКИЕ СТИЛИ (чтобы ничего не поехало)
+    const style = document.createElement('style');
+    style.textContent = `
+      .master-layout { display: flex; gap: 16px; height: 100%; min-height: 600px; width: 100%; }
+      .master-left { flex: 0 0 50%; display: flex; flex-direction: column; gap: 16px; height: 100%; }
+      .master-right { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); position: relative; overflow: hidden; min-height: 500px; }
+      #main-map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100% !important; height: 100% !important; z-index: 1; background: #e5e5e5; }
+      
+      .add-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; flex-shrink: 0; }
+      .add-card h3 { margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .form-grid .full-width { grid-column: span 2; }
+      .form-group { display: flex; flex-direction: column; gap: 6px; }
+      .form-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+      .form-group input, .form-group select { padding: 10px 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+      
+      .list-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+      .list-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; background: rgba(0,0,0,0.2); }
+      .list-header select, .list-header input { padding: 8px 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+      .table-scroll { flex: 1; overflow-y: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { position: sticky; top: 0; background: var(--panel); z-index: 10; padding: 12px 10px; text-align: left; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); cursor: pointer; }
+      td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+      tr:hover td { background: rgba(37,99,235,0.05); }
+      tr.selected td { background: rgba(37,99,235,0.15); }
+      .status-select { padding: 6px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid transparent; cursor: pointer; outline: none; width: 100%; text-transform: uppercase; }
+      .status-select.active { background: rgba(22,163,74,0.15); color: #4ade80; }
+      .status-select.reconstruction { background: rgba(245,158,11,0.15); color: #fbbf24; }
+      .status-select.closed { background: rgba(220,38,38,0.15); color: #f87171; }
+      .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--panel); }
+      .pagination button { padding: 6px 14px; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px; }
+      .pagination button:disabled { opacity: 0.3; }
+      .bulk-panel { display: none; padding: 10px 16px; background: rgba(37,99,235,0.1); border-bottom: 1px solid var(--border); align-items: center; gap: 12px; }
+      .bulk-panel span { font-weight: 600; font-size: 12px; color: var(--brand); }
+      .bulk-panel select { padding: 6px; font-size: 12px; border-radius: 4px; }
+    `;
+    document.head.appendChild(style);
+
     const layout = document.createElement('div');
     layout.className = 'master-layout';
-
     layout.innerHTML = `
       <div class="master-left">
         <div class="add-card">
           <h3 id="form-title">Новая остановка</h3>
           <form id="add-form" class="form-grid">
-            <div class="form-group full-width">
-              <label>Город *</label>
-              <select id="f-city" required></select>
-            </div>
-            <div class="form-group">
-              <label>Код</label>
-              <input id="f-code" maxlength="6" placeholder="000001" style="font-family:monospace;" />
-            </div>
-            <div class="form-group">
-              <label>Название *</label>
-              <input id="f-name" required />
-            </div>
-            <div class="form-group full-width">
-              <label>Адрес</label>
-              <input id="f-addr" placeholder="Улица, дом" />
-            </div>
-            <div class="form-group full-width">
-              <label>Координаты *</label>
-              <input id="f-coords" readonly placeholder="Кликните по карте" />
-            </div>
+            <div class="form-group full-width"><label>Город *</label><select id="f-city" required></select></div>
+            <div class="form-group"><label>Код</label><input id="f-code" maxlength="6" placeholder="000001" style="font-family:monospace;" /></div>
+            <div class="form-group"><label>Название *</label><input id="f-name" required /></div>
+            <div class="form-group full-width"><label>Адрес</label><input id="f-addr" placeholder="Улица, дом" /></div>
+            <div class="form-group full-width"><label>Координаты *</label><input id="f-coords" readonly placeholder="Кликните по карте" /></div>
             <div class="full-width" style="margin-top:8px; display:flex; gap:8px;">
               <button type="submit" class="btn btn--brand" id="btn-save" style="flex:1;">Добавить</button>
               <button type="button" class="btn" id="btn-cancel-edit" style="display:none;">Отмена</button>
@@ -568,7 +582,7 @@
   }
 
   // ==========================================
-  // 11. СОБЫТИЯ
+  // СОБЫТИЯ
   // ==========================================
   function setupEvents() {
     const form = document.getElementById('add-form');
@@ -588,9 +602,8 @@
 
       const [lat, lng] = coords.split(',').map(Number);
       
-      // Проверка на дубликаты
       const isDuplicate = allStops.some(s => s.id !== editId && (s.name.toLowerCase() === name.toLowerCase() || (Math.abs(s.latitude - lat) < 0.0001 && Math.abs(s.longitude - lng) < 0.0001)));
-      if (isDuplicate && !confirm('Похоже, такая остановка уже есть (совпадает имя или координаты). Продолжить?')) return;
+      if (isDuplicate && !confirm('Похоже, такая остановка уже есть. Продолжить?')) return;
 
       isProcessing = true;
       const btn = document.getElementById('btn-save');
@@ -644,7 +657,7 @@
   }
 
   // ==========================================
-  // 12. СТАРТ
+  // СТАРТ
   // ==========================================
   async function main() {
     try { if (window.Auth && window.Auth.requireStaff) await window.Auth.requireStaff(); } catch (e) { return; }
@@ -653,10 +666,12 @@
     setupEvents();
     buildSettings();
     
+    // Инициализация карты
     setTimeout(() => {
       initMap();
-      setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-    }, 100);
+      // Принудительный пересчет размеров через 500мс (когда DOM полностью устаканится)
+      setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+    }, 150);
 
     await loadData();
   }
