@@ -1,459 +1,531 @@
 (function () {
   'use strict';
 
-  let allRoutes = [];
-  let allStops = [];
-  let selectedRouteId = null;
+  // --- Глобальное состояние ---
+  let currentStep = 1;
+  let map = null;
+  let routeLine = null;
+  let stopMarkers = [];
+  let allStopsDb = []; // Справочник всех остановок города
   
-  // Карты
-  let mapList = null; 
-  let mapEditor = null;
-  let listLayer = null;
-  let editorLayer = null;
-
-  // Состояние редактора
-  let editId = null;
-  let direction = 'forward'; // 'forward' или 'backward'
-  let fwdStops = [];
-  let bwdStops = [];
-  let draggableInstance = null;
-
-  // ==========================================
-  // 1. ЗАГРУЗКА ДАННЫХ
-  // ==========================================
-  async function loadData() {
-    try {
-      const [rRes, sRes] = await Promise.all([
-        window.sb.from('routes').select('*, route_stops(count)').order('code'),
-        window.sb.from('stops').select('id, name, stop_code, latitude, longitude').order('name')
-      ]);
-      
-      if (rRes.error) throw rRes.error;
-      if (sRes.error) throw sRes.error;
-
-      allRoutes = rRes.data || [];
-      allStops = sRes.data || [];
-
-      renderTable();
-    } catch (err) {
-      UI.toast('Ошибка загрузки: ' + err.message, 'err');
+  // Данные маршрута
+  let routeData = {
+    code: '',
+    name: '',
+    isTransit: false,
+    forwardStops: [],
+    backwardStops: [],
+    schedule: {
+      startTime: '06:00',
+      endTime: '22:00',
+      interval: 15,
+      days: [1, 2, 3, 4, 5, 6, 7] // Пн-Вс
+    },
+    fare: {
+      type: 'flat',
+      basePrice: 50,
+      stopPrices: []
     }
+  };
+
+  let currentDirection = 'forward'; // 'forward' | 'backward'
+
+  // ==========================================
+  // ИНИЦИАЛИЗАЦИЯ
+  // ==========================================
+  async function init() {
+    console.log('🚀 Мастер запущен');
+    
+    // Загружаем все остановки для поиска
+    const { data, error } = await window.sb.from('stops').select('*');
+    if (error) {
+      UI.toast('Ошибка загрузки остановок: ' + error.message, 'err');
+    } else {
+      allStopsDb = data || [];
+      console.log(`Загружено ${allStopsDb.length} остановок`);
+    }
+
+    setupNavigation();
+    setupStep1();
+    setupStep2();
+    setupStep3();
+    setupStep4();
+
+    goToStep(1);
   }
 
   // ==========================================
-  // 2. ТАБЛИЦА (РЕЕСТР)
+  // НАВИГАЦИЯ
   // ==========================================
-  function renderTable() {
-    const tbody = document.getElementById('routes-tbody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-    if (allRoutes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">Нет маршрутов</td></tr>';
-      return;
-    }
-
-    allRoutes.forEach(r => {
-      const tr = document.createElement('tr');
-      if (r.id === selectedRouteId) tr.classList.add('active');
-      
-      tr.innerHTML = `
-        <td><span class="route-color" style="background:${r.color || '#2563eb'}"></span> <strong>${r.code}</strong></td>
-        <td>${r.name}</td>
-        <td><span class="badge badge--muted">${r.route_stops ? r.route_stops[0].count : 0} ост.</span></td>
-        <td style="text-align:right;">
-          <button class="btn btn--sm edit-btn" style="padding:4px 8px; margin-right:4px;">Ред.</button>
-          <button class="btn btn--sm btn--danger del-btn" style="padding:4px 8px;">Удал.</button>
-        </td>
-      `;
-
-      tr.onclick = (e) => {
-        if (e.target.closest('button')) return;
-        selectRoute(r.id);
-      };
-
-      tr.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); openEditor(r); };
-      tr.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteRoute(r); };
-
-      tbody.appendChild(tr);
+  function setupNavigation() {
+    document.getElementById('btn-next').addEventListener('click', () => {
+      console.log(`Клик: Далее с шага ${currentStep}`);
+      if (validateStep(currentStep)) {
+        goToStep(currentStep + 1);
+      }
     });
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      console.log(`Клик: Назад с шага ${currentStep}`);
+      goToStep(currentStep - 1);
+    });
+
+    document.getElementById('btn-save').addEventListener('click', saveAllData);
   }
 
-  // ==========================================
-  // 3. КАРТА СПИСКА (СПРАВА)
-  // ==========================================
-  function initMapList() {
-    if (mapList) return;
-    mapList = L.map('route-map').setView([40.1209, 9.0129], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapList);
-    listLayer = L.layerGroup().addTo(mapList);
-    
-    if (window.ResizeObserver) new ResizeObserver(() => { if (mapList) mapList.invalidateSize(); }).observe(document.getElementById('route-map'));
-    setTimeout(() => { if (mapList) mapList.invalidateSize(); }, 300);
-  }
+  function goToStep(step) {
+    // Скрываем все шаги
+    document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+    document.getElementById('step-' + step).classList.add('active');
 
-  async function selectRoute(routeId) {
-    selectedRouteId = routeId;
-    renderTable();
+    // Обновляем индикаторы
+    document.querySelectorAll('.step-dot').forEach((el, idx) => {
+      const s = idx + 1;
+      el.classList.remove('active', 'done');
+      if (s < step) el.classList.add('done');
+      if (s === step) el.classList.add('active');
+    });
 
-    if (!mapList) return;
-    listLayer.clearLayers();
+    // Управление кнопками
+    document.getElementById('btn-prev').style.display = step > 1 ? 'block' : 'none';
+    document.getElementById('btn-next').style.display = step < 4 ? 'block' : 'none';
+    document.getElementById('btn-save').style.display = step === 4 ? 'block' : 'none';
 
-    try {
-      const { data: routeStops } = await window.sb.from('route_stops')
-        .select('order_index, stops(id, name, latitude, longitude)')
-        .eq('route_id', routeId).eq('direction', 'forward').order('order_index');
+    currentStep = step;
 
-      if (!routeStops || routeStops.length === 0) return;
-
-      const latlngs = [];
-      routeStops.forEach(rs => {
-        if (!rs.stops || !rs.stops.latitude) return;
-        const ll = [rs.stops.latitude, rs.stops.longitude];
-        latlngs.push(ll);
-        L.circleMarker(ll, { radius: 6, fillColor: '#2563eb', color: '#fff', weight: 2 }).addTo(listLayer).bindPopup(rs.stops.name);
-      });
-
-      if (latlngs.length > 1) L.polyline(latlngs, { color: '#2563eb', weight: 4 }).addTo(listLayer);
-      mapList.fitBounds(latlngs, { padding: [40, 40] });
-    } catch (err) {}
-  }
-
-  // ==========================================
-  // 4. ПОЛНОЭКРАННЫЙ РЕДАКТОР
-  // ==========================================
-  async function openEditor(route = null) {
-    document.getElementById('view-list').style.display = 'none';
-    document.getElementById('view-editor').style.display = 'flex';
-    
-    editId = route ? route.id : null;
-    fwdStops = [];
-    bwdStops = [];
-    direction = 'forward';
-
-    document.getElementById('ed-code').value = route ? route.code : '';
-    document.getElementById('ed-name').value = route ? route.name : '';
-    document.getElementById('ed-color').value = route ? route.color : '#2563eb';
-    document.getElementById('editor-title').textContent = editId ? 'Редактирование маршрута' : 'Новый маршрут';
-
-    // Загружаем остановки, если редактируем
-    if (editId) {
-      const { data } = await window.sb.from('route_stops').select('stop_id, direction').eq('route_id', editId).order('order_index');
-      if (data) {
-        data.forEach(rs => {
-          const stop = allStops.find(s => s.id === rs.stop_id);
-          if (!stop) return;
-          if (rs.direction === 'forward') fwdStops.push(stop);
-          else bwdStops.push(stop);
-        });
-      }
+    // Триггеры для шагов
+    if (step === 2) {
+      setTimeout(initMap, 100); // Ждем отрисовки DOM
+      renderStopsList();
     }
-
-    // Инициализируем карту редактора
-    setTimeout(() => {
-      if (!mapEditor) {
-        mapEditor = L.map('editor-map-canvas').setView([40.1209, 9.0129], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapEditor);
-        editorLayer = L.layerGroup().addTo(mapEditor);
-        if (window.ResizeObserver) new ResizeObserver(() => { if (mapEditor) mapEditor.invalidateSize(); }).observe(document.getElementById('editor-map-canvas'));
-      }
-      mapEditor.invalidateSize();
-      renderEditorStops();
-    }, 100);
-
-    setupTabs();
-    setupSearch();
-  }
-
-  function closeEditor() {
-    document.getElementById('view-editor').style.display = 'none';
-    document.getElementById('view-list').style.display = 'flex';
-    editId = null;
-    if (mapEditor) { mapEditor.remove(); mapEditor = null; }
+    if (step === 3) {
+      renderScheduleStops();
+    }
+    if (step === 4) {
+      renderFareStep();
+    }
   }
 
   // ==========================================
-  // 5. ЛОГИКА ВКЛАДОК И СПИСКА В РЕДАКТОРЕ
+  // ШАГ 1: ОСНОВНОЕ
   // ==========================================
-  function setupTabs() {
+  function setupStep1() {
+    document.getElementById('f-code').addEventListener('input', e => routeData.code = e.target.value.trim());
+    document.getElementById('f-name').addEventListener('input', e => routeData.name = e.target.value.trim());
+    document.getElementById('f-transit').addEventListener('change', e => routeData.isTransit = e.target.checked);
+  }
+
+  // ==========================================
+  // ШАГ 2: ОСТАНОВКИ И КАРТА
+  // ==========================================
+  function setupStep2() {
+    // Переключение вкладок Туда/Обратно
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        direction = btn.dataset.dir;
-        renderEditorStops();
-      };
+        currentDirection = btn.dataset.dir;
+        renderStopsList();
+      });
+    });
+
+    // Добавление остановки
+    document.getElementById('btn-add-stop').addEventListener('click', () => {
+      const select = document.getElementById('select-stop');
+      const stopId = select.value;
+      if (!stopId) return;
+      
+      const stopObj = allStopsDb.find(s => s.id === stopId);
+      if (!stopObj) return;
+
+      const arr = currentDirection === 'forward' ? routeData.forwardStops : routeData.backwardStops;
+      
+      // Проверка на дубликат в этом направлении
+      if (arr.find(s => s.id === stopId)) {
+        return UI.toast('Эта остановка уже добавлена', 'warn');
+      }
+
+      arr.push({ ...stopObj, travel_time_from_prev: 5 }); // По умолчанию 5 минут в пути
+      select.value = ''; // Сброс
+      
+      renderStopsList();
+      drawMapRoute();
+      console.log(`Добавлена остановка: ${stopObj.name} (${currentDirection})`);
+    });
+
+    // Заполнение селекта
+    const select = document.getElementById('select-stop');
+    allStopsDb.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `${s.name} (${s.latitude.toFixed(4)}, ${s.longitude.toFixed(4)})`;
+      select.appendChild(opt);
     });
   }
 
-  function renderEditorStops() {
-    const container = document.getElementById('editor-stops-list');
-    const stopsArr = direction === 'forward' ? fwdStops : bwdStops;
-    
-    container.innerHTML = '';
-    if (stopsArr.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">Остановок нет</div>';
-    } else {
-      stopsArr.forEach((stop, index) => {
-        const div = document.createElement('div');
-        div.className = 'stop-item';
-        div.draggable = true;
-        div.dataset.index = index;
-        div.innerHTML = `
-          <span><span style="color:var(--muted); margin-right:8px;">☰</span> ${index + 1}. ${stop.name}</span>
-          <button class="btn-remove" title="Удалить">&times;</button>
-        `;
-        
-        div.querySelector('.btn-remove').onclick = () => {
-          if (direction === 'forward') fwdStops.splice(index, 1);
-          else bwdStops.splice(index, 1);
-          renderEditorStops();
-          drawEditorMap();
-        };
+  function initMap() {
+    if (map) return; // Уже есть
+    console.log('🗺️ Инициализация карты Leaflet');
 
-        // Drag & Drop
-        div.ondragstart = (e) => { e.dataTransfer.setData('text/plain', index); div.classList.add('dragging'); };
-        div.ondragend = () => { div.classList.remove('dragging'); };
-        div.ondragover = (e) => { e.preventDefault(); };
-        div.ondrop = (e) => {
-          e.preventDefault();
-          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-          const toIndex = index;
-          if (fromIndex === toIndex) return;
-          
-          const arr = direction === 'forward' ? fwdStops : bwdStops;
-          const moved = arr.splice(fromIndex, 1)[0];
-          arr.splice(toIndex, 0, moved);
-          
-          renderEditorStops();
-          drawEditorMap();
-        };
+    map = L.map('map-container').setView([40.1209, 9.0129], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-        container.appendChild(div);
-      });
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => { if (map) map.invalidateSize(); }).observe(document.getElementById('map-container'));
     }
-    drawEditorMap();
+    setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+    drawMapRoute();
   }
 
-  // Поиск остановок (автокомплит)
-  function setupSearch() {
-    const input = document.getElementById('search-stop');
-    const results = document.getElementById('search-results');
+  function drawMapRoute() {
+    if (!map) return;
 
-    input.oninput = () => {
-      const q = input.value.toLowerCase();
-      if (!q) { results.style.display = 'none'; return; }
+    // Очищаем старые маркеры и линию
+    stopMarkers.forEach(m => map.removeLayer(m));
+    stopMarkers = [];
+    if (routeLine) map.removeLayer(routeLine);
 
-      const matched = allStops.filter(s => s.name.toLowerCase().includes(q) && !fwdStops.find(x=>x.id===s.id) && !bwdStops.find(x=>x.id===s.id)).slice(0, 10);
-      
-      results.innerHTML = '';
-      if (matched.length === 0) { results.style.display = 'none'; return; }
+    const stops = currentDirection === 'forward' ? routeData.forwardStops : routeData.backwardStops;
+    if (stops.length === 0) return;
 
-      matched.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'search-item';
-        div.textContent = `${s.name} (${s.stop_code})`;
-        div.onclick = () => {
-          if (direction === 'forward') fwdStops.push(s);
-          else bwdStops.push(s);
-          input.value = '';
-          results.style.display = 'none';
-          renderEditorStops();
-        };
-        results.appendChild(div);
-      });
-      results.style.display = 'block';
-    };
-
-    document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !results.contains(e.target)) results.style.display = 'none';
-    });
-  }
-
-  // Отрисовка карты в редакторе
-  function drawEditorMap() {
-    if (!mapEditor) return;
-    editorLayer.clearLayers();
-
-    const stopsArr = direction === 'forward' ? fwdStops : bwdStops;
     const latlngs = [];
-
-    stopsArr.forEach((stop, idx) => {
-      const ll = [stop.latitude, stop.longitude];
+    stops.forEach((s, idx) => {
+      const ll = [s.latitude, s.longitude];
       latlngs.push(ll);
-      
-      const color = direction === 'forward' ? '#2563eb' : '#f59e0b';
-      L.circleMarker(ll, { radius: 6, fillColor: color, color: '#fff', weight: 2 }).addTo(editorLayer)
-        .bindPopup(`<b>${idx + 1}. ${stop.name}</b>`).openPopup();
+
+      const marker = L.marker(ll).addTo(map);
+      marker.bindPopup(`<b>${idx + 1}. ${s.name}</b>`);
+      stopMarkers.push(marker);
     });
 
     if (latlngs.length > 1) {
-      const color = direction === 'forward' ? '#2563eb' : '#f59e0b';
-      L.polyline(latlngs, { color: color, weight: 4 }).addTo(editorLayer);
-      mapEditor.fitBounds(latlngs, { padding: [30, 30] });
+      routeLine = L.polyline(latlngs, { color: currentDirection === 'forward' ? '#2563eb' : '#f59e0b', weight: 5 }).addTo(map);
+      map.fitBounds(latlngs, { padding: [40, 40] });
     } else if (latlngs.length === 1) {
-      mapEditor.setView(latlngs[0], 15);
+      map.setView(latlngs[0], 15);
     }
   }
 
-  // Генерация обратного пути
-  document.getElementById('btn-reverse')?.addEventListener('click', () => {
-    if (fwdStops.length === 0) return UI.toast('Сначала добавьте остановки "Туда"', 'err');
-    bwdStops = [...fwdStops].reverse();
-    document.querySelector('.tab-btn[data-dir="backward"]').click();
-    UI.toast('Обратный путь сгенерирован', 'ok');
-  });
+  function renderStopsList() {
+    const container = document.getElementById('stops-list-container');
+    container.innerHTML = '';
+    const stops = currentDirection === 'forward' ? routeData.forwardStops : routeData.backwardStops;
+
+    if (stops.length === 0) {
+      container.innerHTML = '<div style="text-align:center; color:var(--muted); padding:20px;">Нет остановок</div>';
+      return;
+    }
+
+    stops.forEach((s, idx) => {
+      const div = document.createElement('div');
+      div.className = 'stop-item-drag';
+      div.draggable = true;
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="drag-handle">☰</span>
+          <span><b>${idx + 1}.</b> ${s.name}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="number" class="travel-time" value="${s.travel_time_from_prev}" title="Время в пути от предыдущей (мин)" data-idx="${idx}" />
+          <button class="btn btn--sm btn--danger btn-remove" data-idx="${idx}">×</button>
+        </div>
+      `;
+
+      // Удаление
+      div.querySelector('.btn-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        stops.splice(idx, 1);
+        renderStopsList();
+        drawMapRoute();
+      });
+
+      // Изменение времени в пути
+      div.querySelector('.travel-time').addEventListener('change', (e) => {
+        const newVal = parseInt(e.target.value) || 0;
+        stops[idx].travel_time_from_prev = newVal;
+        console.log(`Время в пути для ${s.name} изменено на ${newVal}`);
+      });
+
+      // Drag & Drop
+      div.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', idx);
+        div.classList.add('dragging');
+      });
+
+      div.addEventListener('dragend', () => {
+        div.classList.remove('dragging');
+      });
+
+      div.addEventListener('dragover', (e) => {
+        e.preventDefault();
+      });
+
+      div.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        if (fromIdx === idx) return;
+
+        const moved = stops.splice(fromIdx, 1)[0];
+        stops.splice(idx, 0, moved);
+
+        renderStopsList();
+        drawMapRoute();
+        console.log(`Остановка перемещена: ${fromIdx} -> ${idx}`);
+      });
+
+      container.appendChild(div);
+    });
+  }
 
   // ==========================================
-  // 6. СОХРАНЕНИЕ
+  // ШАГ 3: РАСПИСАНИЕ
   // ==========================================
-  async function saveRoute() {
-    const code = document.getElementById('ed-code').value.trim();
-    const name = document.getElementById('ed-name').value.trim();
-    const color = document.getElementById('ed-color').value;
+  function setupStep3() {
+    document.getElementById('s-start').addEventListener('change', e => routeData.schedule.startTime = e.target.value);
+    document.getElementById('s-end').addEventListener('change', e => routeData.schedule.endTime = e.target.value);
+    document.getElementById('s-interval').addEventListener('input', e => routeData.schedule.interval = parseInt(e.target.value) || 15);
 
-    if (!code || !name) return UI.toast('Заполните код и название', 'err');
-    if (fwdStops.length === 0) return UI.toast('Добавьте хотя бы одну остановку "Туда"', 'err');
+    // Чекбоксы дней
+    document.querySelectorAll('.day-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => {
+        routeData.schedule.days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => parseInt(c.value));
+      });
+    });
+  }
 
-    const btn = document.getElementById('btn-save-route');
-    btn.disabled = true; btn.textContent = 'Сохранение...';
+  function renderScheduleStops() {
+    const container = document.getElementById('schedule-stops-container');
+    container.innerHTML = '';
+    
+    // Берем маршрут "Туда" для отображения
+    const stops = routeData.forwardStops;
+    if (stops.length === 0) {
+      container.innerHTML = '<div style="color:var(--err)">Сначала добавьте остановки на шаге 2!</div>';
+      return;
+    }
+
+    stops.forEach((s, idx) => {
+      const div = document.createElement('div');
+      div.className = 'stop-item-drag';
+      div.style.cursor = 'default';
+      div.innerHTML = `
+        <span><b>${idx + 1}.</b> ${s.name}</span>
+        <span style="color:var(--muted); font-size:12px;">
+          ${idx === 0 ? 'Начальная' : `+${s.travel_time_from_prev} мин от пред.`}
+        </span>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ==========================================
+  // ШАГ 4: ЦЕНЫ
+  // ==========================================
+  function setupStep4() {
+    document.querySelectorAll('input[name="fare-type"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        routeData.fare.type = e.target.value;
+        renderFareStep();
+      });
+    });
+
+    document.getElementById('f-base-price').addEventListener('input', e => routeData.fare.basePrice = parseFloat(e.target.value) || 0);
+  }
+
+  function renderFareStep() {
+    const flatBox = document.getElementById('fare-flat-box');
+    const stopBox = document.getElementById('fare-stop-box');
+    const tableBody = document.getElementById('fare-table-body');
+
+    if (routeData.fare.type === 'flat') {
+      flatBox.style.display = 'block';
+      stopBox.style.display = 'none';
+    } else {
+      flatBox.style.display = 'none';
+      stopBox.style.display = 'block';
+
+      tableBody.innerHTML = '';
+      const stops = routeData.forwardStops;
+      
+      // Генерируем матрицу "Откуда - Куда" (упрощенно: все со всеми)
+      stops.forEach((fromStop, i) => {
+        stops.forEach((toStop, j) => {
+          if (i >= j) return; // Только вперед
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${fromStop.name}</td>
+            <td>${toStop.name}</td>
+            <td><input type="number" class="fare-input" data-from="${fromStop.id}" data-to="${toStop.id}" value="50" /></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      });
+
+      // Сохраняем цены при изменении
+      document.querySelectorAll('.fare-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const from = e.target.dataset.from;
+          const to = e.target.dataset.to;
+          const price = parseFloat(e.target.value) || 0;
+          
+          // Обновляем массив
+          const existing = routeData.fare.stopPrices.find(p => p.from === from && p.to === to);
+          if (existing) existing.price = price;
+          else routeData.fare.stopPrices.push({ from, to, price });
+        });
+      });
+    }
+  }
+
+  // ==========================================
+  // ВАЛИДАЦИЯ
+  // ==========================================
+  function validateStep(step) {
+    if (step === 1) {
+      if (!routeData.code || !routeData.name) {
+        UI.toast('Заполните код и название маршрута', 'err');
+        return false;
+      }
+    }
+    if (step === 2) {
+      if (routeData.forwardStops.length < 2) {
+        UI.toast('Добавьте минимум 2 остановки в направление "Туда"', 'err');
+        return false;
+      }
+      if (routeData.backwardStops.length > 0 && routeData.backwardStops.length < 2) {
+        UI.toast('В направлении "Обратно" должно быть минимум 2 остановки (или 0)', 'err');
+        return false;
+      }
+    }
+    if (step === 3) {
+      if (routeData.schedule.days.length === 0) {
+        UI.toast('Выберите хотя бы один день недели', 'err');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // ==========================================
+  // СОХРАНЕНИЕ В БД И ГЕНЕРАЦИЯ РЕЙСОВ
+  // ==========================================
+  async function saveAllData() {
+    console.log('💾 Начинаем сохранение...');
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
 
     try {
-      let routeId = editId;
-      const payload = { code, name, color, is_active: true };
+      // 1. Сохраняем маршрут
+      const { data: routeDataDb, error: routeErr } = await window.sb.from('routes').insert({
+        code: routeData.code,
+        name: routeData.name,
+        is_transit: routeData.isTransit
+      }).select().single();
 
-      // 1. Маршрут
-      if (editId) {
-        await window.sb.from('routes').update(payload).eq('id', editId);
+      if (routeErr) throw routeErr;
+      const routeId = routeDataDb.id;
+      console.log('✅ Маршрут создан ID:', routeId);
+
+      // 2. Сохраняем остановки
+      const stopsInserts = [];
+      routeData.forwardStops.forEach((s, idx) => {
+        stopsInserts.push({ route_id: routeId, stop_id: s.id, direction: 'forward', order_index: idx + 1, travel_time_from_prev: s.travel_time_from_prev || 0 });
+      });
+      routeData.backwardStops.forEach((s, idx) => {
+        stopsInserts.push({ route_id: routeId, stop_id: s.id, direction: 'backward', order_index: idx + 1, travel_time_from_prev: s.travel_time_from_prev || 0 });
+      });
+
+      if (stopsInserts.length > 0) {
+        const { error: stopsErr } = await window.sb.from('route_stops').insert(stopsInserts);
+        if (stopsErr) throw stopsErr;
+        console.log('✅ Остановки сохранены:', stopsInserts.length);
+      }
+
+      // 3. Сохраняем расписание
+      const { error: schedErr } = await window.sb.from('schedules').insert({
+        route_id: routeId,
+        start_time: routeData.schedule.startTime,
+        end_time: routeData.schedule.endTime,
+        interval_minutes: routeData.schedule.interval,
+        days_of_week: routeData.schedule.days
+      });
+      if (schedErr) throw schedErr;
+      console.log('✅ Расписание сохранено');
+
+      // 4. Генерируем рейсы (Trips)
+      await generateTrips(routeId);
+
+      // 5. Сохраняем тарифы
+      if (routeData.fare.type === 'flat') {
+        await window.sb.from('fares').insert({
+          route_id: routeId,
+          fare_type: 'flat',
+          base_price: routeData.fare.basePrice
+        });
       } else {
-        const { data, error } = await window.sb.from('routes').insert(payload).select().single();
-        if (error) throw error;
-        routeId = data.id;
+        for (const p of routeData.fare.stopPrices) {
+          await window.sb.from('fares').insert({
+            route_id: routeId,
+            fare_type: 'stop_based',
+            from_stop_id: p.from,
+            to_stop_id: p.to,
+            price: p.price
+          });
+        }
       }
+      console.log('✅ Тарифы сохранены');
 
-      // 2. Удаляем старые остановки
-      await window.sb.from('route_stops').delete().eq('route_id', routeId);
-
-      // 3. Вставляем новые
-      const inserts = [];
-      fwdStops.forEach((s, i) => inserts.push({ route_id: routeId, stop_id: s.id, direction: 'forward', order_index: i + 1 }));
-      bwdStops.forEach((s, i) => inserts.push({ route_id: routeId, stop_id: s.id, direction: 'backward', order_index: i + 1 }));
-
-      if (inserts.length > 0) {
-        const { error } = await window.sb.from('route_stops').insert(inserts);
-        if (error) throw error;
-      }
-
-      UI.toast('Маршрут сохранен', 'ok');
-      closeEditor();
-      await loadData();
-      selectRoute(routeId);
+      UI.toast('Маршрут успешно сохранен!', 'ok');
+      setTimeout(() => { location.href = 'routes.html'; }, 1000);
 
     } catch (err) {
+      console.error('❌ Ошибка сохранения:', err);
       UI.toast(err.message, 'err');
     } finally {
-      btn.disabled = false; btn.textContent = 'Сохранить маршрут';
+      btn.disabled = false;
+      btn.textContent = 'Сохранить маршрут';
     }
   }
 
-  // ==========================================
-  // 7. УДАЛЕНИЕ
-  // ==========================================
-  async function deleteRoute(route) {
-    if (!confirm(`Удалить маршрут ${route.code}?`)) return;
-    try {
-      await window.sb.from('routes').delete().eq('id', route.id);
-      UI.toast('Маршрут удален', 'ok');
-      if (selectedRouteId === route.id) { selectedRouteId = null; if (listLayer) listLayer.clearLayers(); }
-      await loadData();
-    } catch (err) { UI.toast(err.message, 'err'); }
+  async function generateTrips(routeId) {
+    const { startTime, endTime, interval, days } = routeData.schedule;
+    
+    // Парсим время
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+
+    let currentMins = startH * 60 + startM;
+    const endMins = endH * 60 + endM;
+
+    const tripsToInsert = [];
+
+    // Генерируем времена рейсов для каждого дня
+    days.forEach(day => {
+      currentMins = startH * 60 + startM;
+      while (currentMins <= endMins) {
+        const h = String(Math.floor(currentMins / 60)).padStart(2, '0');
+        const m = String(currentMins % 60).padStart(2, '0');
+        const timeStr = `${h}:${m}:00`;
+
+        tripsToInsert.push({
+          route_id: routeId,
+          departure_time: timeStr,
+          day_of_week: day
+        });
+
+        currentMins += interval;
+      }
+    });
+
+    if (tripsToInsert.length > 0) {
+      const { error } = await window.sb.from('trips').insert(tripsToInsert);
+      if (error) throw error;
+      console.log(`✅ Сгенерировано ${tripsToInsert.length} рейсов в БД`);
+    }
   }
 
-  // ==========================================
-  // 8. ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ
-  // ==========================================
-  async function main() {
-    try { if (window.Auth) await window.Auth.requireStaff(); } catch (e) { return; }
-
-    const content = UI.renderShell({ title: 'Маршруты', profile: window.currentProfile, active: 'routes.html' });
-    content.innerHTML = `
-      <!-- ВЬЮ 1: СПИСОК (Master-Detail) -->
-      <div id="view-list" class="master-layout">
-        <div class="master-left">
-          <div class="list-card">
-            <div class="list-header">
-              <input id="search-route" placeholder="Поиск..." style="flex:1;" />
-              <button class="btn btn--brand" id="btn-create">+ Создать</button>
-            </div>
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th>Код</th><th>Название</th><th>Ост.</th><th>Действия</th></tr></thead>
-                <tbody id="routes-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="master-right"><div id="route-map"></div></div>
-      </div>
-
-      <!-- ВЬЮ 2: РЕДАКТОР -->
-      <div id="view-editor" class="editor-view">
-        <!-- Карта -->
-        <div class="editor-map"><div id="editor-map-canvas"></div></div>
-        
-        <!-- Панель управления -->
-        <div class="editor-panel">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 id="editor-title" style="margin:0; font-size:18px;">Новый маршрут</h2>
-            <button class="btn btn--sm" onclick="document.getElementById('btn-close-editor').click()">Закрыть</button>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div class="form-group"><label>Код *</label><input id="ed-code" placeholder="А-1" /></div>
-            <div class="form-group"><label>Название *</label><input id="ed-name" placeholder="Центр - Вокзал" /></div>
-          </div>
-          <div class="form-group"><label>Цвет</label><input id="ed-color" type="color" value="#2563eb" style="height:40px;" /></div>
-
-          <div class="tabs-nav" style="margin-top:12px;">
-            <button class="tab-btn active" data-dir="forward">Туда</button>
-            <button class="tab-btn" data-dir="backward">Обратно</button>
-          </div>
-
-          <!-- Поиск остановки -->
-          <div style="position:relative; margin-bottom:12px;">
-            <input id="search-stop" placeholder="Найти остановку..." style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:6px;" />
-            <div id="search-results" class="search-results"></div>
-          </div>
-
-          <!-- Список остановок -->
-          <div class="stop-list" id="editor-stops-list" style="flex:1;"></div>
-
-          <div style="margin-top:16px; display:flex; gap:8px; flex-direction:column;">
-            <button class="btn" id="btn-reverse" style="background:var(--card);">Развернуть обратно (из Туда)</button>
-            <div style="display:flex; gap:8px;">
-              <button class="btn" id="btn-close-editor" style="flex:1; color:var(--err);">Отмена</button>
-              <button class="btn btn--brand" id="btn-save-route" style="flex:2;">Сохранить маршрут</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(content);
-
-    // Слушатели
-    document.getElementById('btn-create').onclick = () => openEditor(null);
-    document.getElementById('btn-close-editor').onclick = closeEditor;
-    document.getElementById('btn-save-route').onclick = saveRoute;
-    document.getElementById('search-route').oninput = () => {
-      const q = document.getElementById('search-route').value.toLowerCase();
-      document.querySelectorAll('#routes-tbody tr').forEach(tr => {
-        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    };
-
-    initMapList();
-    await loadData();
-  }
-
-  document.addEventListener('DOMContentLoaded', main);
+  // --- Старт ---
+  document.addEventListener('DOMContentLoaded', init);
 })();
