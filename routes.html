@@ -3,9 +3,130 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Маршруты — Админ-панель транспорта</title>
+  <title>Маршруты — Управление транспортом</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    /* Сетка: Слева реестр, Справа карта */
+    .master-layout {
+      display: flex;
+      gap: 16px;
+      height: calc(100vh - 140px);
+      min-height: 600px;
+    }
+
+    .master-left {
+      flex: 0 0 40%; /* 40% на таблицу */
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+
+    .master-right {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Фикс исчезновения карты */
+    #route-map {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 1;
+      background: #e5e5e5;
+    }
+
+    /* Список маршрутов */
+    .list-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .list-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      background: rgba(0,0,0,0.2);
+      align-items: center;
+    }
+
+    .list-header input, .list-header select {
+      padding: 8px 12px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+    }
+
+    .table-scroll { flex: 1; overflow-y: auto; }
+    .table-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table-scroll th {
+      position: sticky; top: 0; background: var(--panel); z-index: 10;
+      padding: 12px 10px; text-align: left; font-size: 11px; color: var(--muted);
+      text-transform: uppercase; border-bottom: 1px solid var(--border);
+    }
+    .table-scroll td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+    .table-scroll tr { cursor: pointer; transition: background 0.2s; }
+    .table-scroll tr:hover td { background: rgba(37,99,235,0.08); }
+    .table-scroll tr.active td { background: rgba(37,99,235,0.15); border-left: 2px solid var(--brand); }
+
+    /* Цветной индикатор маршрута */
+    .route-color {
+      display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+      margin-right: 8px; vertical-align: middle;
+    }
+
+    /* Модалка */
+    .modal-route { width: min(900px, 95vw) !important; }
+    .modal__body { max-height: 80vh; overflow-y: auto; }
+    
+    .form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;
+    }
+    .form-grid .full-width { grid-column: span 2; }
+
+    /* Управление остановками в модалке */
+    .stops-manager {
+      display: flex; gap: 16px; border-top: 1px solid var(--border); padding-top: 20px;
+    }
+    .stops-col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .stops-col h4 { margin: 0; font-size: 13px; color: var(--muted); text-transform: uppercase; }
+    
+    .stops-list {
+      border: 1px solid var(--border); border-radius: 6px; height: 300px; overflow-y: auto;
+      background: var(--bg); padding: 8px; display: flex; flex-direction: column; gap: 4px;
+    }
+    
+    .stop-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; font-size: 12px; cursor: pointer;
+    }
+    .stop-item:hover { border-color: var(--brand); }
+    
+    .stop-actions { display: flex; gap: 4px; }
+    .btn-arrow { padding: 2px 6px; font-size: 10px; }
+
+    /* Перетаскивание */
+    .drag-handle { cursor: grab; color: var(--muted); padding-right: 8px; }
+    .drag-handle:active { cursor: grabbing; }
+    .dragging { opacity: 0.5; border: 1px dashed var(--brand); }
+  </style>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <script src="js/config.js"></script>
