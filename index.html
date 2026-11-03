@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Афиша Тюмени</title>
+<meta name="description" content="Афиша Тюмени: концерты, выставки, кинопоказы, лекции. Бесплатные и дешёвые события.">
+<meta name="theme-color" content="#0a0b10">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --font-display:'Manrope',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,sans-serif;
+  --bg:#0a0b10;--surface:#12141c;--surface-2:#191c27;--surface-3:#222633;
+  --text:#f3f5fa;--text-2:#c3c9d8;--muted:#8b93a8;
+  --border:#232838;--border-strong:#2f3648;
+  --accent:#ff4d6d;--accent-2:#8b5cf6;--ok:#34d399;--warn:#fbbf24;--danger:#f87171;
+  --radius:14px;--radius-lg:20px;--radius-xl:28px;
+  --shadow:0 12px 32px -12px rgba(0,0,0,.6);
+  --grad:linear-gradient(135deg,var(--accent),var(--accent-2));
+  --grad-soft:linear-gradient(135deg,rgba(255,77,109,.15),rgba(139,92,246,.15));
+  --header-h:64px;--nav-bottom-h:60px;--container:1240px;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#f7f8fc;--surface:#fff;--surface-2:#f0f2f8;--surface-3:#e6e9f2;
+  --text:#0c0f18;--text-2:#333a4b;--muted:#5d6478;
+  --border:#e5e8f0;--border-strong:#d3d8e5;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100dvh}
+body.no-scroll{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{max-width:100%;display:block}
+input,select,textarea{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.container{max-width:var(--container);margin:0 auto;padding:0 18px}
+.hidden{display:none!important}
+h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:-.02em;line-height:1.2}
+h1{font-size:clamp(28px,4.5vw,48px);font-weight:800}
+h2{font-size:clamp(20px,2.4vw,28px);font-weight:800}
+h3{font-size:17px;font-weight:700}
+
+/* ============ OFFLINE BAR ============ */
+#offlineBar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--warn);color:#3a2a00;padding:8px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;justify-content:center;transform:translateY(-100%);transition:transform .3s}
+#offlineBar.show{transform:translateY(0)}
+#offlineBar svg{width:16px;height:16px;flex-shrink:0}
+
+/* ============ SVG ICON SYSTEM ============ */
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-.125em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ TOPBAR ============ */
+.topbar{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.topbar-inner{height:var(--header-h);display:flex;align-items:center;gap:16px}
+.brand{font-family:var(--font-display);font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--grad);display:grid;place-items:center;color:#fff;font-size:14px}
+.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.main-nav{display:flex;gap:2px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.main-nav::-webkit-scrollbar{display:none}
+.nav-link{padding:8px 12px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.nav-link svg{width:15px;height:15px}
+.nav-link:hover{color:var(--text);background:var(--surface-2)}
+.nav-link.active{color:var(--text);background:var(--surface-2);font-weight:600}
+.top-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.icon-btn{width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;transition:.18s;position:relative}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn .count{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg)}
+
+/* ============ HERO ============ */
+.hero{padding:40px 0 24px;position:relative;overflow:hidden;background:radial-gradient(900px 340px at 15% -20%,color-mix(in srgb,var(--accent-2) 22%,transparent),transparent 70%),radial-gradient(800px 300px at 95% 0%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 70%)}
+.hero-inner{display:grid;gap:22px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--text-2);width:fit-content}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 30%,transparent)}
+.hero p{color:var(--muted);font-size:clamp(14px,1.5vw,17px);max-width:620px}
+.hero-search{display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:6px;box-shadow:var(--shadow);max-width:680px}
+.hero-search input{flex:1;background:transparent;border:none;outline:none;color:var(--text);padding:12px 14px;font-size:15px}
+.hero-search input::placeholder{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:8px 13px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text-2);transition:.18s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.chip svg{width:14px;height:14px}
+.chip:hover{background:var(--surface-2);color:var(--text)}
+.chip.active{background:var(--grad);color:#fff;border-color:transparent}
+
+/* ============ BUTTONS ============ */
+.btn{padding:10px 18px;border-radius:11px;font-weight:600;font-size:14px;background:var(--accent);color:#fff;transition:.18s;display:inline-flex;align-items:center;gap:7px;justify-content:center;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--text);box-shadow:none}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.gray{background:var(--surface-2);color:var(--text);box-shadow:none}
+.btn.grad{background:var(--grad)}
+.btn.danger{background:var(--danger);color:#2a0606}
+.btn.sm{padding:7px 12px;font-size:12.5px;border-radius:9px}
+.btn.lg{padding:13px 24px;font-size:15px;border-radius:13px}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.btn svg{width:16px;height:16px}
+.btn.sm svg{width:14px;height:14px}
+
+/* ============ SECTION ============ */
+.section{padding:32px 0}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.section-head .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.section-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ============ CATALOG ============ */
+.catalog{display:grid;grid-template-columns:250px 1fr;gap:26px;align-items:start}
+.filter-rail{position:sticky;top:calc(var(--header-h) + 14px);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:16px;max-height:calc(100dvh - var(--header-h) - 28px);overflow-y:auto}
+.filter-group{display:flex;flex-direction:column;gap:6px}
+.filter-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.filter-label .val{color:var(--accent);font-weight:700;text-transform:none;letter-spacing:0;font-size:12.5px}
+.filter-group select,.filter-group input[type=text],.filter-group input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13.5px;outline:none;width:100%;transition:.15s}
+.filter-group select:focus,.filter-group input:focus{border-color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check-row{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text-2);cursor:pointer}
+.check-row input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.toolbar .result-count{font-size:13.5px;color:var(--muted)}
+.toolbar .result-count b{color:var(--text)}
+.toolbar-right{display:flex;gap:7px;align-items:center}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:6px 10px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--muted);transition:.15s;display:flex;align-items:center;gap:4px}
+.seg button svg{width:14px;height:14px}
+.seg button.active{background:var(--surface-3);color:var(--text);font-weight:600}
+
+/* ============ CARDS ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.grid.list{grid-template-columns:1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;display:flex;flex-direction:column;position:relative}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
+.card-img{aspect-ratio:16/10;background:var(--grad-soft);position:relative;overflow:hidden}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-img .placeholder{width:100%;height:100%;display:grid;place-items:center;background:var(--grad);color:#fff;opacity:.5}
+.card-img .placeholder svg{width:42px;height:42px}
+.card-fav{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);color:#fff;display:grid;place-items:center;transition:.18s;z-index:2}
+.card-fav svg{width:17px;height:17px}
+.card-fav.on{background:var(--accent)}
+.badge{position:absolute;top:10px;left:10px;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;backdrop-filter:blur(10px);z-index:2;letter-spacing:.02em;display:flex;align-items:center;gap:4px}
+.badge svg{width:12px;height:12px}
+.badge.free{background:color-mix(in srgb,var(--ok) 90%,transparent);color:#062}
+.badge.cheap{background:color-mix(in srgb,var(--accent) 92%,transparent);color:#fff}
+.badge.paid{background:rgba(0,0,0,.65);color:#fff}
+.card-body{padding:14px 16px 16px;flex:1;display:flex;flex-direction:column;gap:5px}
+.card-cat{font-size:10.5px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.card-title{font-family:var(--font-display);font-size:15.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{margin-top:auto;padding-top:8px;display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+.card-meta .row{display:flex;align-items:center;gap:5px}
+.card-meta svg{width:13px;height:13px;flex-shrink:0;opacity:.8}
+.grid.list .card{flex-direction:row;align-items:stretch}
+.grid.list .card-img{aspect-ratio:auto;width:200px;flex-shrink:0}
+.grid.list .card-body{padding:16px 20px}
+.empty{grid-column:1/-1;padding:50px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--border-strong);border-radius:var(--radius-lg)}
+.empty svg{width:40px;height:40px;margin-bottom:10px;opacity:.5}
+
+/* ============ AD ============ */
+.ad-slot{margin:8px 0 24px;border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);border:1px solid var(--border);position:relative}
+.ad-slot a{display:block}
+.ad-slot img{width:100%;max-height:180px;object-fit:cover}
+.ad-slot .ad-label{position:absolute;top:8px;right:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--bg) 70%,transparent);padding:3px 7px;border-radius:5px;backdrop-filter:blur(6px)}
+
+/* ============ DETAIL ============ */
+.detail-back{margin:20px 0 0}
+.detail-hero{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:start;padding:20px 0 32px}
+.detail-gallery{position:relative;aspect-ratio:16/10;border-radius:var(--radius-xl);overflow:hidden;background:var(--grad-soft);border:1px solid var(--border)}
+.detail-gallery img{width:100%;height:100%;object-fit:cover}
+.detail-gallery .placeholder{width:100%;height:100%;display:grid;place-items:center;background:var(--grad);color:#fff;opacity:.6}
+.detail-gallery .placeholder svg{width:64px;height:64px}
+.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:10px;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;backdrop-filter:blur(8px);transition:.15s}
+.gallery-nav:hover{background:rgba(0,0,0,.8)}
+.gallery-nav.prev{left:10px}
+.gallery-nav.next{right:10px}
+.gallery-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.gallery-dots button{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);transition:.15s}
+.gallery-dots button.active{background:#fff;width:18px;border-radius:4px}
+.detail-side{display:flex;flex-direction:column;gap:14px}
+.detail-side h1{font-size:clamp(24px,3vw,34px)}
+.detail-meta{display:flex;flex-direction:column;gap:9px;font-size:14.5px}
+.detail-meta .line{display:flex;align-items:flex-start;gap:9px;color:var(--text-2)}
+.detail-meta .line svg{width:17px;height:17px;flex-shrink:0;margin-top:2px;opacity:.7}
+.detail-meta .line b{color:var(--text)}
+.detail-side .price-tag{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--accent)}
+.detail-side .price-tag.free{color:var(--ok)}
+.detail-actions{display:flex;flex-direction:column;gap:8px}
+.detail-body{margin-top:28px;display:grid;grid-template-columns:2fr 1fr;gap:28px}
+.detail-body .desc{color:var(--text-2);white-space:pre-wrap;font-size:15px;line-height:1.7}
+.detail-aside{display:flex;flex-direction:column;gap:16px}
+.aside-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.aside-card h3{font-size:14.5px;margin-bottom:10px}
+#detailMap{height:220px;border-radius:12px;overflow:hidden;margin-top:10px}
+
+/* ============ MAP / CALENDAR ============ */
+#mapContainer{height:min(540px,68dvh);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border)}
+.leaflet-container{background:var(--surface-2);font-family:var(--font-body)}
+.leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border-radius:12px}
+.leaflet-popup-tip{background:var(--surface)}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.calendar-grid .dow{font-size:10.5px;text-align:center;color:var(--muted);font-weight:700;text-transform:uppercase;padding:8px 0}
+.cal-day{aspect-ratio:1;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:13.5px;cursor:pointer;transition:.15s;min-height:52px}
+.cal-day:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.cal-day.other{opacity:.35;pointer-events:none}
+.cal-day.today{border-color:var(--accent);background:var(--grad-soft)}
+.cal-day .cnt{font-size:10px;color:var(--muted)}
+
+/* ============ FOOTER ============ */
+.site-footer{background:var(--surface);border-top:1px solid var(--border);padding:48px 0 28px;margin-top:64px}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:32px}
+.footer-grid p{color:var(--muted);font-size:13.5px;margin-top:10px;max-width:300px}
+.footer-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px}
+.footer-col a{display:block;color:var(--text-2);font-size:13.5px;padding:4px 0;transition:.15s}
+.footer-col a:hover{color:var(--accent)}
+.footer-bottom{margin-top:32px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.socials{display:flex;gap:6px;margin-top:14px}
+.socials a{width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;transition:.15s}
+.socials a svg{width:16px;height:16px}
+.socials a:hover{background:var(--accent);color:#fff}
+#serviceEntry{opacity:.6;font-size:12.5px}
+#serviceEntry:hover{opacity:1}
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px}
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
+.modal-content{position:relative;background:var(--surface);border-radius:var(--radius-xl);max-width:600px;width:100%;max-height:90dvh;overflow-y:auto;padding:24px;border:1px solid var(--border);box-shadow:0 24px 60px -24px rgba(0,0,0,.7);animation:modalIn .2s ease}
+.modal-content.wide{max-width:900px}
+@keyframes modalIn{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+.modal-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;z-index:2;transition:.15s}
+.modal-close:hover{background:var(--surface-3)}
+.modal-close svg{width:16px;height:16px}
+.modal-content h2{font-size:20px;margin-bottom:12px;padding-right:36px}
+
+/* ============ ADMIN ============ */
+.admin-layout{display:flex;min-height:100dvh;background:var(--bg)}
+.admin-side{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100dvh;overflow-y:auto;z-index:40}
+.admin-side .brand{margin-bottom:18px;padding-left:6px}
+.admin-side .nav-group{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:12px 10px 5px}
+.admin-nav{text-align:left;padding:9px 11px;border-radius:9px;color:var(--text-2);font-weight:500;font-size:13.5px;transition:.15s;display:flex;align-items:center;gap:9px;width:100%}
+.admin-nav svg{width:16px;height:16px;flex-shrink:0}
+.admin-nav:hover{background:var(--surface-2);color:var(--text)}
+.admin-nav.active{background:var(--grad-soft);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+.admin-main{flex:1;min-width:0;padding:24px;overflow-x:hidden}
+.admin-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.admin-head h1{font-size:22px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:18px}
+.panel h3{font-size:14.5px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13.5px;outline:none;width:100%;transition:.15s}
+.field textarea{resize:vertical;min-height:70px;line-height:1.5}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.row-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 9px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;white-space:nowrap}
+tr:hover td{background:var(--surface-2)}
+td .actions{display:flex;gap:5px;justify-content:flex-end}
+.table-wrap{overflow-x:auto;margin:0 -4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;inset:0;background:var(--grad-soft);opacity:.4;pointer-events:none}
+.stat>*{position:relative;z-index:1}
+.stat .label{font-size:12px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:5px}
+.stat .label svg{width:13px;height:13px}
+.stat b{display:block;font-family:var(--font-display);font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:3px}
+.stat .delta{font-size:11.5px;margin-top:2px;color:var(--ok)}
+.stat .delta.neg{color:var(--danger)}
+
+/* charts */
+.bars-chart{display:flex;align-items:flex-end;gap:4px;height:130px;padding-top:8px}
+.bars-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;height:100%}
+.bars-chart .bar{width:100%;background:var(--grad);border-radius:5px 5px 0 0;min-height:3px;transition:.4s}
+.bars-chart .lbl{font-size:9.5px;color:var(--muted)}
+.kpi-bars{display:flex;flex-direction:column;gap:8px}
+.kpi-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.kpi-row .name{width:140px;color:var(--text-2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-row .bar{flex:1;height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+.kpi-row .bar span{display:block;height:100%;background:var(--grad);border-radius:4px}
+.kpi-row .num{width:50px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.heatmap{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-top:8px}
+.heatmap div{aspect-ratio:1;border-radius:3px;background:var(--surface-3);min-height:16px}
+.heatmap .lbl{aspect-ratio:auto;background:none;font-size:9px;text-align:center;color:var(--muted);min-height:auto}
+
+/* login */
+.login-wrap{min-height:100dvh;display:grid;place-items:center;padding:18px;background:radial-gradient(600px 300px at 30% 10%,var(--grad-soft),transparent)}
+.login-card{max-width:380px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:28px;box-shadow:var(--shadow)}
+.login-card h2{margin:14px 0 18px}
+
+/* toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ok);color:#072;padding:12px 18px;border-radius:11px;font-weight:600;z-index:300;box-shadow:0 24px 60px -24px rgba(0,0,0,.7);animation:toastIn .25s ease;max-width:320px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.toast svg{width:16px;height:16px;flex-shrink:0}
+.toast.err{background:var(--danger);color:#3a0505}
+@keyframes toastIn{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* image picker */
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+.img-tile{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border)}
+.img-tile img{width:100%;height:100%;object-fit:cover}
+.img-tile .rm{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,.7);color:#fff;display:grid;place-items:center}
+.img-tile .rm svg{width:13px;height:13px}
+.img-tile .cover{position:absolute;bottom:4px;left:4px;font-size:9.5px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:700}
+.dropzone{border:2px dashed var(--border-strong);border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--surface-2)}
+.dropzone svg{width:24px;height:24px;margin-bottom:6px;opacity:.6}
+.storage-browser{max-height:320px;overflow-y:auto;margin-top:8px}
+
+/* misc */
+.badge-status{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:700}
+.badge-status.pub{background:color-mix(in srgb,var(--ok) 25%,transparent);color:var(--ok)}
+.badge-status.draft{background:color-mix(in srgb,var(--warn) 25%,transparent);color:var(--warn)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--surface-2);font-size:12px;color:var(--text-2)}
+.pill svg{width:13px;height:13px}
+
+/* mobile nav */
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;z-index:60;display:none;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.mobile-nav-inner{display:flex;height:var(--nav-bottom-h)}
+.mobile-nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--muted);font-weight:500;transition:.15s}
+.mobile-nav a svg{width:19px;height:19px}
+.mobile-nav a.active{color:var(--accent)}
+
+/* maintenance screen */
+.maint-screen{min-height:100dvh;display:grid;place-items:center;padding:24px;text-align:center;background:radial-gradient(600px 300px at 50% 20%,var(--grad-soft),transparent)}
+.maint-screen .cardm{max-width:480px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:36px 28px;box-shadow:var(--shadow)}
+.maint-screen .ico{width:64px;height:64px;border-radius:18px;background:var(--grad);display:grid;place-items:center;margin:0 auto 18px;color:#fff}
+.maint-screen .ico svg{width:32px;height:32px}
+.maint-screen h1{font-size:26px;margin-bottom:10px}
+.maint-screen p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px}
+.maint-screen .countdown{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--accent);margin-bottom:16px}
+
+@media(max-width:1080px){.catalog{grid-template-columns:1fr}.filter-rail{position:static;max-height:none;flex-direction:row;flex-wrap:wrap;gap:12px}.filter-group{flex:1;min-width:150px}}
+@media(max-width:900px){.main-nav{display:none}.detail-hero{grid-template-columns:1fr;gap:16px}.detail-body{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr;gap:24px}.admin-side{position:fixed;left:-260px;transition:left .25s;box-shadow:var(--shadow)}.admin-side.open{left:0}.admin-main{padding:16px}}
+@media(max-width:640px){.container{padding:0 14px}.hero{padding:28px 0 16px}.hero-search{flex-direction:column;padding:8px}.grid{grid-template-columns:1fr;gap:14px}.footer-grid{grid-template-columns:1fr}.mobile-nav{display:block}body{padding-bottom:var(--nav-bottom-h)}.site-footer{margin-top:32px;padding-bottom:calc(var(--nav-bottom-h) + 20px)}.modal-content{padding:18px}.grid.list .card{flex-direction:column}.grid.list .card-img{width:100%;aspect-ratio:16/10}.cal-day{min-height:42px;font-size:12px;border-radius:8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<!-- SVG ICON SPRITE (Lucide) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol>
+<symbol id="i-calendar-days" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+<symbol id="i-heart-filled" viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+<symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></symbol>
+<symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-bar-chart" viewBox="0 0 24 24"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></symbol>
+<symbol id="i-drama" viewBox="0 0 24 24"><path d="M10 11h.01"/><path d="M14 6h.01"/><path d="M18 6h.01"/><path d="M6.5 13.1h.01"/><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3"/><path d="M17.4 9.9c-.8.8-2 .8-2.8 0"/><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7"/><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+<symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+<symbol id="i-message" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></symbol>
+<symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+<symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></symbol>
+<symbol id="i-alert-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+<symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+<symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+<symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-mouse-pointer" viewBox="0 0 24 24"><path d="M12.586 12.586 19 19"/><path d="M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z"/></symbol>
+<symbol id="i-trending-up" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+<symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+<symbol id="i-tablet" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+<symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/></symbol>
+</defs>
+</svg>
+
+<div id="offlineBar"><svg class="icon"><use href="#i-wifi-off"/></svg><span id="offlineText">Нет интернета. Данные могут быть неактуальны.</span></div>
+
+<!-- USER APP -->
+<div id="userApp">
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="#/" class="brand"><span class="brand-mark">А</span>Афиша<span style="color:var(--text)">Тюмень</span></a>
+      <nav class="main-nav" id="mainNav">
+        <a href="#/" class="nav-link" data-nav="home"><svg class="icon"><use href="#i-home"/></svg>Все</a>
+        <a href="#/today" class="nav-link" data-nav="today"><svg class="icon"><use href="#i-calendar"/></svg>Сегодня</a>
+        <a href="#/weekend" class="nav-link" data-nav="weekend"><svg class="icon"><use href="#i-calendar-days"/></svg>Выходные</a>
+        <a href="#/free" class="nav-link" data-nav="free"><svg class="icon"><use href="#i-gift"/></svg>Бесплатно</a>
+        <a href="#/map" class="nav-link" data-nav="map"><svg class="icon"><use href="#i-map"/></svg>Карта</a>
+        <a href="#/calendar" class="nav-link" data-nav="calendar"><svg class="icon"><use href="#i-calendar-days"/></svg>Календарь</a>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn" id="favBtn" aria-label="Избранное"><svg class="icon"><use href="#i-heart"/></svg><span class="count hidden" id="favCount">0</span></button>
+        <button class="icon-btn" id="themeToggle" aria-label="Тема"><svg class="icon"><use href="#i-moon"/></svg></button>
+      </div>
+    </div>
+  </header>
+  <main id="appMain"></main>
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a href="#/" class="brand"><span class="brand-mark">А</span>Афиша<span style="color:var(--text)">Тюмень</span></a>
+          <p>Независимый гид по событиям города.</p>
+          <div class="socials">
+            <a href="#" aria-label="Telegram"><svg class="icon"><use href="#i-send"/></svg></a>
+            <a href="#" aria-label="VK"><svg class="icon"><use href="#i-globe"/></svg></a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>События</h4><a href="#/today">Сегодня</a><a href="#/weekend">Выходные</a><a href="#/free">Бесплатно</a><a href="#/map">На карте</a></div>
+        <div class="footer-col"><h4>Проект</h4><a href="#">О проекте</a><a href="#/advertise">Рекламодателям</a><a href="#">Контакты</a></div>
+        <div class="footer-col"><h4>Сервис</h4><a href="#" id="serviceEntry">Служебный вход</a></div>
+      </div>
+      <div class="footer-bottom"><span>© 2026 Афиша Тюмень</span><span id="footerStats"></span></div>
+    </div>
+  </footer>
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <a href="#/" data-mnav="home"><svg class="icon"><use href="#i-home"/></svg>Афиша</a>
+      <a href="#/today" data-mnav="today"><svg class="icon"><use href="#i-calendar"/></svg>Сегодня</a>
+      <a href="#/free" data-mnav="free"><svg class="icon"><use href="#i-gift"/></svg>Бесплатно</a>
+      <a href="#/map" data-mnav="map"><svg class="icon"><use href="#i-map"/></svg>Карта</a>
+      <a href="#/calendar" data-mnav="calendar"><svg class="icon"><use href="#i-calendar-days"/></svg>Календарь</a>
+    </div>
+  </nav>
+</div>
+
+<div id="adminApp" class="hidden"></div>
+<div class="modal hidden" id="appModal"><div class="modal-overlay" data-close></div><div class="modal-content" id="modalContent"><button class="modal-close" data-close><svg class="icon"><use href="#i-x"/></svg></button><div id="modalBody"></div></div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+/* ================================================================
+   CONFIG
+=============================================================== */
+const SUPABASE_URL = 'https://yqsaitmnulnjsetsqygk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxc2FpdG1udWxuanNldHNxeWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1OTY5MTcsImV4cCI6MjEwOTE3MjkxN30.ejkwJEZ6qLVdWfSLEQTK0GzxKRxkekkwBnuzBqSJ6tQ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const CFG = { city:'Тюмень', center:[57.1522,65.5414], zoom:12 };
+
+/* ================================================================
+   UTILS
+=============================================================== */
+const $ = (s,r=document) => r.querySelector(s);
+const $$ = (s,r=document) => [...r.querySelectorAll(s)];
+const esc = s => (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const debounce = (fn,ms=250) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const fmtDate = iso => iso?new Date(iso).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+const fmtDateShort = iso => iso?new Date(iso).toLocaleString('ru-RU',{day:'2-digit',month:'short'}):'—';
+const fmtTime = iso => iso?new Date(iso).toLocaleString('ru-RU',{hour:'2-digit',minute:'2-digit'}):'';
+const fmtPrice = p => (!p||p<=0)?'Бесплатно':p+' ₽';
+const sameDay = (a,b) => new Date(a).toDateString()===new Date(b).toDateString();
+const plural = (n,o,f,m) => { const a=n%10,b=n%100; if(a===1&&b!==11)return o; if(a>=2&&a<=4&&(b<10||b>=20))return f; return m; };
+function toast(msg,err=false){ const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.innerHTML=`<svg class="icon"><use href="#${err?'i-alert-circle':'i-check'}"/></svg><span>${esc(msg)}</span>`; document.body.appendChild(t); setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},2800); }
+function openModal(html,wide=false){ $('#modalBody').innerHTML=html; $('#modalContent').classList.toggle('wide',wide); $('#appModal').classList.remove('hidden'); document.body.classList.add('no-scroll'); $$('#modalBody [data-close]').forEach(el=>el.onclick=closeModal); }
+function closeModal(){ $('#appModal').classList.add('hidden'); document.body.classList.remove('no-scroll'); }
+$$('#appModal [data-close]').forEach(el=>el.onclick=closeModal);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeModal(); });
+
+/* ================================================================
+   INDEXEDDB
+=============================================================== */
+const IDB = (()=>{ let dbp;
+  function open(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{ const r=indexedDB.open('afisha',3); r.onupgradeneeded=e=>{ const d=e.target.result; if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv'); if(!d.objectStoreNames.contains('queue'))d.createObjectStore('queue',{autoIncrement:true}); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); return dbp; }
+  return {
+    async get(key){ const d=await open(); return new Promise((res,rej)=>{ const r=d.transaction('kv').objectStore('kv').get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+    async set(key,val){ const d=await open(); return new Promise((res,rej)=>{ const r=d.transaction('kv','readwrite').objectStore('kv').put(val,key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); },
+    async push(item){ const d=await open(); return new Promise((res,rej)=>{ const r=d.transaction('queue','readwrite').objectStore('queue').add(item); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+    async all(){ const d=await open(); return new Promise((res,rej)=>{ const r=d.transaction('queue').objectStore('queue').getAll(); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+    async clearQ(){ const d=await open(); return new Promise((res,rej)=>{ const r=d.transaction('queue','readwrite').objectStore('queue').clear(); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); },
+    async delQ(ids){ const d=await open(); return new Promise((res,rej)=>{ const tx=d.transaction('queue','readwrite'); const st=tx.objectStore('queue'); ids.forEach(id=>st.delete(id)); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+  };
+})();
+
+/* ================================================================
+   THEME
+=============================================================== */
+const THEME_KEY='afisha:theme';
+function applyTheme(){ const t=localStorage.getItem(THEME_KEY)||'dark'; document.documentElement.dataset.theme=t; const b=$('#themeToggle'); if(b) b.innerHTML=`<svg class="icon"><use href="#${t==='dark'?'i-moon':'i-sun'}"/></svg>`; }
+applyTheme();
+$('#themeToggle')?.addEventListener('click',()=>{ localStorage.setItem(THEME_KEY,document.documentElement.dataset.theme==='dark'?'light':'dark'); applyTheme(); });
+
+/* ================================================================
+   FAVORITES
+=============================================================== */
+const FAV_KEY='afisha:favs';
+const getFavs=()=>{ try{ return JSON.parse(localStorage.getItem(FAV_KEY))||[]; }catch{ return []; } };
+const setFavs=a=>{ localStorage.setItem(FAV_KEY,JSON.stringify(a)); updateFavCount(); };
+const isFav=id=>getFavs().includes(id);
+function toggleFav(id){ const f=getFavs(); const i=f.indexOf(id); i===-1?f.push(id):f.splice(i,1); setFavs(f); }
+function updateFavCount(){ const n=getFavs().length; const el=$('#favCount'); if(!el)return; el.textContent=n; el.classList.toggle('hidden',n===0); }
+updateFavCount();
+
+/* ================================================================
+   DEVICE / ANALYTICS CORE
+=============================================================== */
+const VISITOR_KEY='afisha:vid';
+function getVisitorId(){ let v=localStorage.getItem(VISITOR_KEY); if(!v){ v=(crypto.randomUUID?.()||('v'+Math.random().toString(36).slice(2))); localStorage.setItem(VISITOR_KEY,v); } return v; }
+function deviceType(){ const ua=navigator.userAgent; if(/iPad|Tablet|PlayBook|Silk/i.test(ua)) return 'tablet'; if(/Mobi|Android|iPhone/i.test(ua)) return 'mobile'; return 'desktop'; }
+function browserName(){ const ua=navigator.userAgent; if(/Edg\//.test(ua))return 'Edge'; if(/OPR|Opera/.test(ua))return 'Opera'; if(/Chrome\//.test(ua))return 'Chrome'; if(/Firefox\//.test(ua))return 'Firefox'; if(/Safari\//.test(ua))return 'Safari'; return 'Other'; }
+function osName(){ const ua=navigator.userAgent; if(/Windows/.test(ua))return 'Windows'; if(/Mac OS/.test(ua))return 'macOS'; if(/Android/.test(ua))return 'Android'; if(/iPhone|iPad|iOS/.test(ua))return 'iOS'; if(/Linux/.test(ua))return 'Linux'; return 'Other'; }
+function utm(){ const p=new URLSearchParams(location.search); return { utm_source:p.get('utm_source'), utm_medium:p.get('utm_medium'), utm_campaign:p.get('utm_campaign') }; }
+
+let sessionId=null, sessionStart=Date.now(), lastPageStart=Date.now();
+async function ensureSession(){
+  if(sessionId) return sessionId;
+  let s=await IDB.get('session');
+  const now=Date.now();
+  if(!s || (now-s.last_seen)>30*60*1000){
+    const u=utm();
+    s={ id:(crypto.randomUUID?.()||('s'+now)), visitor_id:getVisitorId(), started_at:new Date(now).toISOString(), last_seen:new Date(now).toISOString(), pages:0, device:deviceType(), browser:browserName(), os:osName(), referrer:document.referrer||null, ...u };
+    sb.from('sessions').insert({ id:s.id, visitor_id:s.visitor_id, started_at:s.started_at, last_seen:s.last_seen, device:s.device, browser:s.browser, os:s.os, referrer:s.referrer, utm_source:s.utm_source||null, utm_medium:s.utm_medium||null, utm_campaign:s.utm_campaign||null }).then(()=>{});
+  }
+  s.last_seen=new Date(now).toISOString();
+  sessionId=s.id;
+  await IDB.set('session',s);
+  return sessionId;
+}
+async function track(type,payload={}){
+  const sid=await ensureSession();
+  const item={ type, payload:{...payload, visitor_id:getVisitorId(), session_id:sid, ts:new Date().toISOString() }, at:Date.now() };
+  if(type==='page_view'){ try{ await trackPageView(payload); }catch{} }
+  if(type==='search'){ try{ await trackSearch(payload); }catch{} }
+  if(['ticket_click','ics','share','ad_impression','ad_click','filter'].includes(type)){ try{ await trackInteraction(payload,type); }catch{} }
+  if(navigator.onLine) flushQueue(); else IDB.push(item);
+}
+async function trackPageView(p){
+  const sid=await ensureSession();
+  const u=utm(); const dur=Date.now()-lastPageStart; lastPageStart=Date.now();
+  const row={ path:location.hash||location.pathname, event_id:p.event_id||null, visitor_id:getVisitorId(), session_id:sid, ts:new Date().toISOString(), device:deviceType(), browser:browserName(), os:osName(), referrer:document.referrer||null, utm_source:u.utm_source||null, utm_medium:u.utm_medium||null, utm_campaign:u.utm_campaign||null, duration_ms:dur };
+  sb.from('page_views').insert(row).then(()=>{});
+  sb.from('sessions').update({ last_seen:new Date().toISOString(), pages:(JSON.parse(localStorage.getItem('afisha:pages')||'0')||0)+1 }).eq('id',sid).then(()=>{});
+  localStorage.setItem('afisha:pages', String((JSON.parse(localStorage.getItem('afisha:pages')||'0')||0)+1));
+}
+async function trackSearch(p){
+  const sid=await ensureSession();
+  sb.from('search_queries').insert({ query:p.query, results_count:p.results_count||0, visitor_id:getVisitorId(), ts:new Date().toISOString() }).then(()=>{});
+}
+async function trackInteraction(p,type){
+  const sid=await ensureSession();
+  const row={ type, event_id:p.event_id||null, ad_id:p.ad_id||null, visitor_id:getVisitorId(), session_id:sid, ts:new Date().toISOString(), meta:p.meta||{} };
+  sb.from('interactions').insert(row).then(()=>{});
+  if(type==='ad_click'&&p.ad_id){ sb.rpc('increment_ad_click',{aid:p.ad_id}).then(()=>{}); }
+}
+async function flushQueue(){
+  try{
+    const items=await IDB.all(); if(!items.length) return;
+    const ids=[];
+    for(const it of items){
+      try{
+        if(it.type==='page_view') await sb.from('page_views').insert(it.payload);
+        else if(it.type==='search') await sb.from('search_queries').insert({ query:it.payload.query, results_count:it.payload.results_count||0, visitor_id:it.payload.visitor_id, ts:it.payload.ts });
+        else if(['ticket_click','ics','share','ad_impression','ad_click','filter'].includes(it.type)) await sb.from('interactions').insert({ type:it.type, event_id:it.payload.event_id||null, ad_id:it.payload.ad_id||null, visitor_id:it.payload.visitor_id, session_id:it.payload.session_id, ts:it.payload.ts, meta:it.payload.meta||{} });
+        ids.push(it.id);
+      }catch{}
+    }
+    if(ids.length) await IDB.delQ(ids);
+  }catch{}
+}
+
+/* ================================================================
+   ONLINE / OFFLINE BAR
+=============================================================== */
+let lastSync=Date.now();
+function updateOfflineBar(){
+  const bar=$('#offlineBar'); const txt=$('#offlineText');
+  if(navigator.onLine){ bar.classList.remove('show'); }
+  else {
+    const diff=Math.round((Date.now()-lastSync)/60000);
+    txt.textContent=`Нет интернета. Данные могут быть неактуальны. Последнее обновление: ${diff<1?'только что':diff+' мин назад'}.`;
+    bar.classList.add('show');
+  }
+}
+window.addEventListener('online',()=>{ updateOfflineBar(); toast('Соединение восстановлено'); flushQueue(); });
+window.addEventListener('offline',updateOfflineBar);
+updateOfflineBar();
+setInterval(()=>{ if(!navigator.onLine) updateOfflineBar(); },30000);
+
+/* ================================================================
+   DB
+=============================================================== */
+const db={ events:[], venues:[], categories:[], collections:[], collection_items:[], ads:[], settings:{}, maintenance_templates:[], error_scenarios:[], advertiser_requests:[], source:'supabase' };
+
+async function loadDB(){
+  try{
+    const [ev,vn,cat,col,ci,ads,st,mt,es]=await Promise.all([
+      sb.from('events').select('*').eq('status','published').order('start_at',{ascending:true}),
+      sb.from('venues').select('*'),
+      sb.from('categories').select('*').order('sort_order'),
+      sb.from('collections').select('*'),
+      sb.from('collection_items').select('*'),
+      sb.from('ads').select('*').eq('active',true),
+      sb.from('settings').select('*'),
+      sb.from('maintenance_templates').select('*'),
+      sb.from('error_scenarios').select('*'),
+    ]);
+    const vMap=Object.fromEntries((vn.data||[]).map(v=>[v.id,v]));
+    db.events=(ev.data||[]).map(e=>({...e, venue:vMap[e.venue_id]||null}));
+    db.venues=vn.data||[];
+    db.categories=cat.data||[];
+    db.collections=col.data||[];
+    db.collection_items=ci.data||[];
+    db.ads=ads.data||[];
+    db.settings=Object.fromEntries((st.data||[]).map(s=>[s.key,s.value]));
+    db.maintenance_templates=mt.data||[];
+    db.error_scenarios=es.data||[];
+    // images per event
+    const eids=db.events.map(e=>e.id);
+    if(eids.length){
+      const imgs=await sb.from('event_images').select('*').in('event_id',eids).order('sort_order');
+      const byEv={};
+      (imgs.data||[]).forEach(i=>{ (byEv[i.event_id]||(byEv[i.event_id]=[])).push(i); });
+      db.events.forEach(e=>{ e.images=byEv[e.id]||[]; });
+    }
+    lastSync=Date.now();
+    await IDB.set('cache:events',db.events);
+    await IDB.set('cache:venues',db.venues);
+    await IDB.set('cache:categories',db.categories);
+    await IDB.set('cache:collections',db.collections);
+    await IDB.set('cache:settings',db.settings);
+    await IDB.set('cache:ads',db.ads);
+    await IDB.set('cache:lastSync',lastSync);
+  }catch(e){
+    console.warn('[loadDB] offline fallback',e.message);
+    const [evs,vns,cats,cols,sets,ads,ls]=await Promise.all([IDB.get('cache:events'),IDB.get('cache:venues'),IDB.get('cache:categories'),IDB.get('cache:collections'),IDB.get('cache:settings'),IDB.get('cache:ads'),IDB.get('cache:lastSync')]);
+    db.events=evs||[]; db.venues=vns||[]; db.categories=cats||[]; db.collections=cols||[]; db.settings=sets||{}; db.ads=ads||[]; if(ls) lastSync=ls;
+  }
+}
+
+/* ================================================================
+   REALTIME
+=============================================================== */
+function setupRealtime(){
+  ['events','venues','collections','settings','event_images','ads'].forEach(table=>{
+    sb.channel('rt:'+table).on('postgres_changes',{event:'*',schema:'public',table},async()=>{
+      await loadDB(); lastSync=Date.now();
+      if(!$('#adminApp').classList.contains('hidden')) renderAdmin();
+      else router();
+    }).subscribe();
+  });
+}
+
+/* ================================================================
+   SERVICE WORKER
+=============================================================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{ reg.update().catch(()=>{}); }).catch(()=>{});
+  });
+}
+
+/* ================================================================
+   SITE MODE (maintenance)
+=============================================================== */
+function isMaintenance(){ const m=db.settings?.site_mode?.mode; return m==='maintenance'; }
+function renderMaintenance(){
+  const m=db.settings?.site_mode||{}; const tpl=db.maintenance_templates?.[0]||{};
+  const title=m.title||tpl.title||'Сайт на обслуживании';
+  const body=m.body||tpl.body||'Мы скоро вернёмся.';
+  const icon=tpl.icon||'wrench';
+  $('#userApp').innerHTML=`<div class="maint-screen"><div class="cardm"><div class="ico"><svg class="icon"><use href="#i-${icon}"/></svg></div><h1>${esc(title)}</h1><p>${esc(body)}</p>${m.until?`<div class="countdown" id="mcnt"></div>`:''}<button class="btn" onclick="location.reload()"><svg class="icon"><use href="#i-refresh"/></svg>Обновить</button></div></div>`;
+  if(m.until){
+    const tick=()=>{ const el=$('#mcnt'); if(!el)return; const d=new Date(m.until)-new Date(); if(d<=0){ el.textContent='Скоро откроемся'; return; } const h=Math.floor(d/3600000), mi=Math.floor(d%3600000/60000); el.textContent=`До открытия: ${h} ч ${mi} мин`; };
+    tick(); setInterval(tick,30000);
+  }
+  document.querySelector('.site-footer')?.classList.add('hidden');
+  document.querySelector('.mobile-nav')?.classList.add('hidden');
+}
+
+/* ================================================================
+   ROUTER
+=============================================================== */
+const state={ route:'home', query:'', date:'any', price:'any', category:'any', age:'any', sort:'date', view:'grid', onlyTickets:false, showFavs:false, page:1, perPage:12 };
+const app=()=>$('#appMain');
+
+function router(){
+  if(isMaintenance()){ renderMaintenance(); return; }
+  document.querySelector('.site-footer')?.classList.remove('hidden');
+  document.querySelector('.mobile-nav')?.classList.remove('hidden');
+  const hash=location.hash||'#/';
+  const parts=hash.replace(/^#\//,'').split('/');
+  const route=parts[0]||'home';
+  state.route=route;
+  closeModal();
+  if(route==='event') return renderDetail(parts[1]);
+  if(route==='favs') return renderCatalog({showFavs:true,title:'Избранное',subtitle:'Ваши сохранённые события'});
+  if(route==='today') return renderCatalog({date:'today',title:'Сегодня',subtitle:'События, которые идут сегодня'});
+  if(route==='weekend') return renderCatalog({date:'weekend',title:'Выходные',subtitle:'Куда пойти в субботу и воскресенье'});
+  if(route==='free') return renderCatalog({price:'free',title:'Бесплатно',subtitle:'События без билета'});
+  if(route==='map') return renderMap();
+  if(route==='calendar') return renderCalendar();
+  if(route==='advertise') return renderAdvertise();
+  if(route==='report') return renderPublicReport(parts[1]);
+  return renderHome();
+}
+window.addEventListener('hashchange',router);
+
+function setActiveNav(){
+  $$('.main-nav .nav-link').forEach(a=>a.classList.toggle('active',a.getAttribute('href')===location.hash||(a.getAttribute('href')==='#/'&&(location.hash===''||location.hash==='#/'))));
+  $$('.mobile-nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')===location.hash));
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const todayCount=db.events.filter(e=>sameDay(e.start_at,new Date())).length;
+  const freeCount=db.events.filter(e=>!e.price).length;
+  const hero=db.settings.hero||{title:'Что происходит в Тюмени',subtitle:'Бесплатные и дешёвые события — каждый день.'};
+  app().innerHTML=`
+    <section class="hero"><div class="container hero-inner">
+      <div><div class="hero-eyebrow"><span class="dot"></span>${todayCount} сегодня · ${freeCount} бесплатных</div>
+      <h1 style="margin-top:14px">${esc(hero.title)}</h1>
+      <p style="margin-top:8px">${esc(hero.subtitle)}</p></div>
+      <div class="hero-search"><input type="text" id="heroSearch" placeholder="Найти событие, место или категорию…"><button class="btn" id="heroSearchBtn"><svg class="icon"><use href="#i-search"/></svg>Найти</button></div>
+      <div class="chips" id="heroChips">
+        <button class="chip" data-chip="today"><svg class="icon"><use href="#i-calendar"/></svg>Сегодня</button>
+        <button class="chip" data-chip="weekend"><svg class="icon"><use href="#i-calendar-days"/></svg>Выходные</button>
+        <button class="chip" data-chip="free"><svg class="icon"><use href="#i-gift"/></svg>Бесплатно</button>
+        <button class="chip" data-chip="cheap"><svg class="icon"><use href="#i-tag"/></svg>До 500 ₽</button>
+        <button class="chip" data-chip="kids"><svg class="icon"><use href="#i-users"/></svg>Детям</button>
+      </div>
+    </div></section>
+    <div class="container"><div class="ad-slot" id="adSlot"></div></div>
+    <section class="section container">
+      <div class="section-head"><div><h2>Ближайшие события</h2><div class="sub">Отфильтруйте по дате, цене и категории</div></div></div>
+      <div class="catalog">
+        <aside class="filter-rail" id="filterRail">${filterRailHTML()}</aside>
+        <div>
+          <div class="toolbar"><div class="result-count" id="resultCount"></div><div class="toolbar-right">
+            <div class="seg" id="viewSeg"><button data-view="grid" class="active"><svg class="icon"><use href="#i-grid"/></svg></button><button data-view="list"><svg class="icon"><use href="#i-list"/></svg></button></div>
+            <select id="sortSelect" style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px">
+              <option value="date">Сначала ближайшие</option><option value="popular">Популярные</option><option value="price-asc">Сначала дешёвые</option><option value="price-desc">Сначала дорогие</option>
+            </select>
+          </div></div>
+          <div class="grid" id="eventsGrid"></div>
+          <div id="pagination" style="margin-top:22px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+    </section>
+    ${db.collections.length?`<section class="section container"><div class="section-head"><div><h2>Подборки</h2><div class="sub">Готовые маршруты от редакции</div></div></div><div class="grid" id="collectionsGrid"></div></section>`:''}
+  `;
+  bindFilters(); renderGrid(); renderCollections();
+  const go=()=>{ state.query=$('#heroSearch').value.trim(); state.page=1; track('search',{query:state.query,results_count:applyFilters(db.events).length}); renderGrid(); document.querySelector('.catalog').scrollIntoView({behavior:'smooth'}); };
+  $('#heroSearchBtn').onclick=go;
+  $('#heroSearch').addEventListener('keydown',e=>{ if(e.key==='Enter')go(); });
+  $$('#heroChips .chip').forEach(ch=>ch.onclick=()=>{ const k=ch.dataset.chip; resetFilters(); if(k==='today')state.date='today'; if(k==='weekend')state.date='weekend'; if(k==='free')state.price='free'; if(k==='cheap')state.price='cheap'; if(k==='kids')state.category='Дети'; state.page=1; syncFilterUI(); document.querySelector('.catalog').scrollIntoView({behavior:'smooth'}); renderGrid(); });
+  loadAd(); setActiveNav(); track('page_view',{path:'home'});
+}
+
+function filterRailHTML(){
+  return `<div class="filter-group"><div class="filter-label">Поиск</div><input type="text" id="fSearch" placeholder="Название или место…" value="${esc(state.query)}"></div>
+    <div class="filter-group"><div class="filter-label">Дата</div><select id="fDate"><option value="any">Любая</option><option value="today">Сегодня</option><option value="tomorrow">Завтра</option><option value="weekend">Выходные</option><option value="week">Ближайшая неделя</option></select></div>
+    <div class="filter-group"><div class="filter-label">Цена <span class="val" id="priceVal"></span></div><select id="fPrice"><option value="any">Любая</option><option value="free">Бесплатно</option><option value="cheap">До 500 ₽</option><option value="mid">500–1500 ₽</option><option value="premium">1500 ₽ и выше</option></select></div>
+    <div class="filter-group"><div class="filter-label">Категория</div><select id="fCategory"><option value="any">Все</option>${db.categories.map(c=>`<option>${esc(c.name)}</option>`).join('')}</select></div>
+    <div class="filter-group"><div class="filter-label">Возраст</div><select id="fAge"><option value="any">Любой</option><option value="0">0+</option><option value="6">6+</option><option value="12">12+</option><option value="16">16+</option><option value="18">18+</option></select></div>
+    <div class="filter-group"><label class="check-row"><input type="checkbox" id="fTickets"> Только с билетами</label><label class="check-row"><input type="checkbox" id="fFavs"> Только избранное</label></div>
+    <div class="filter-group"><button class="btn gray block sm" id="resetFilters"><svg class="icon"><use href="#i-refresh"/></svg>Сбросить</button></div>`;
+}
+function bindFilters(){
+  const search=$('#fSearch'); if(search) search.addEventListener('input',debounce(e=>{ state.query=e.target.value.trim(); state.page=1; renderGrid(); },250));
+  const map={fDate:'date',fPrice:'price',fCategory:'category',fAge:'age'};
+  Object.entries(map).forEach(([id,key])=>{ const el=$('#'+id); if(el) el.addEventListener('change',e=>{ state[key]=e.target.value; state.page=1; renderGrid(); }); });
+  $('#fTickets')?.addEventListener('change',e=>{ state.onlyTickets=e.target.checked; state.page=1; renderGrid(); });
+  $('#fFavs')?.addEventListener('change',e=>{ state.showFavs=e.target.checked; state.page=1; renderGrid(); });
+  $('#resetFilters')?.addEventListener('click',()=>{ resetFilters(); syncFilterUI(); renderGrid(); });
+  $('#sortSelect')?.addEventListener('change',e=>{ state.sort=e.target.value; renderGrid(); });
+  $$('#viewSeg button').forEach(b=>b.onclick=()=>{ state.view=b.dataset.view; $$('#viewSeg button').forEach(x=>x.classList.toggle('active',x===b)); $('#eventsGrid').classList.toggle('list',state.view==='list'); });
+  syncFilterUI();
+}
+function resetFilters(){ state.query=''; state.date='any'; state.price='any'; state.category='any'; state.age='any'; state.onlyTickets=false; state.showFavs=false; state.page=1; }
+function syncFilterUI(){
+  if($('#fSearch'))$('#fSearch').value=state.query; if($('#fDate'))$('#fDate').value=state.date; if($('#fPrice'))$('#fPrice').value=state.price;
+  if($('#fCategory'))$('#fCategory').value=state.category; if($('#fAge'))$('#fAge').value=state.age;
+  if($('#fTickets'))$('#fTickets').checked=state.onlyTickets; if($('#fFavs'))$('#fFavs').checked=state.showFavs;
+  const pv=$('#priceVal'); if(pv) pv.textContent=({any:'',free:'0',cheap:'≤500',mid:'500–1500',premium:'1500+'})[state.price]||'';
+}
+function applyFilters(list){
+  const now=new Date(); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1);
+  const week=new Date(now); week.setDate(now.getDate()+7);
+  const favs=getFavs();
+  return list.filter(e=>{
+    if(!e.start_at)return false;
+    const s=new Date(e.start_at);
+    if(state.date==='today'&&!sameDay(s,now))return false;
+    if(state.date==='tomorrow'&&!sameDay(s,tomorrow))return false;
+    if(state.date==='weekend'&&s.getDay()!==0&&s.getDay()!==6)return false;
+    if(state.date==='week'&&(s<now||s>week))return false;
+    const p=Number(e.price)||0;
+    if(state.price==='free'&&p>0)return false;
+    if(state.price==='cheap'&&(p===0||p>500))return false;
+    if(state.price==='mid'&&(p<=500||p>1500))return false;
+    if(state.price==='premium'&&p<=1500)return false;
+    if(state.category!=='any'&&e.category!==state.category)return false;
+    if(state.age!=='any'&&String(e.age_limit||'').replace('+','')!==state.age)return false;
+    if(state.onlyTickets&&!e.ticket_url)return false;
+    if(state.showFavs&&!favs.includes(e.id))return false;
+    if(state.query){ const q=state.query.toLowerCase(); const hay=[e.title,e.category,e.venue?.name,e.venue?.address,e.description].join(' ').toLowerCase(); if(!hay.includes(q))return false; }
+    return true;
+  });
+}
+function sortEvents(list){ const a=[...list]; if(state.sort==='date')a.sort((x,y)=>new Date(x.start_at)-new Date(y.start_at)); if(state.sort==='popular')a.sort((x,y)=>(y.views||0)-(x.views||0)); if(state.sort==='price-asc')a.sort((x,y)=>(x.price||0)-(y.price||0)); if(state.sort==='price-desc')a.sort((x,y)=>(y.price||0)-(x.price||0)); return a; }
+function renderGrid(){
+  const grid=$('#eventsGrid'); if(!grid)return;
+  const list=sortEvents(applyFilters(db.events));
+  const total=list.length; const pages=Math.max(1,Math.ceil(total/state.perPage));
+  if(state.page>pages) state.page=pages;
+  const slice=list.slice((state.page-1)*state.perPage,state.page*state.perPage);
+  $('#resultCount').innerHTML=`<b>${total}</b> ${plural(total,'событие','события','событий')}`;
+  grid.classList.toggle('list',state.view==='list');
+  grid.innerHTML=slice.length?slice.map(cardHTML).join(''):`<div class="empty"><svg class="icon"><use href="#i-search"/></svg><h3>Ничего не найдено</h3><p style="margin-top:6px">Попробуйте изменить фильтры</p></div>`;
+  bindCardActions();
+  const pg=$('#pagination'); if(pg){ pg.innerHTML=pages>1?Array.from({length:pages},(_,i)=>`<button class="btn ${i+1===state.page?'':'ghost'} sm" data-page="${i+1}">${i+1}</button>`).join(''):''; $$('[data-page]',pg).forEach(b=>b.onclick=()=>{ state.page=parseInt(b.dataset.page); renderGrid(); window.scrollTo({top:grid.offsetTop-80,behavior:'smooth'}); }); }
+}
+function cardHTML(e){
+  const badge=!e.price?'<span class="badge free"><svg class="icon"><use href="#i-gift"/></svg>Бесплатно</span>':e.price<=500?`<span class="badge cheap">${e.price} ₽</span>`:`<span class="badge paid">${e.price} ₽</span>`;
+  const img=e.images?.[0]?.url?`<img src="${esc(e.images[0].url)}" loading="lazy" alt="${esc(e.title)}">`:`<div class="placeholder"><svg class="icon"><use href="#i-image"/></svg></div>`;
+  const fav=isFav(e.id)?'on':'';
+  return `<article class="card" data-id="${esc(e.id)}" tabindex="0">
+    <div class="card-img">${img}${badge}<button class="card-fav ${fav}" data-fav="${esc(e.id)}"><svg class="icon"><use href="#${isFav(e.id)?'i-heart-filled':'i-heart'}"/></svg></button></div>
+    <div class="card-body"><div class="card-cat">${esc(e.category||'Событие')}</div><div class="card-title">${esc(e.title)}</div>
+    <div class="card-meta"><span class="row"><svg class="icon"><use href="#i-calendar"/></svg>${fmtDateShort(e.start_at)}${fmtTime(e.start_at)?' · '+fmtTime(e.start_at):''}</span><span class="row"><svg class="icon"><use href="#i-map-pin"/></svg>${esc(e.venue?.name||CFG.city)}</span></div></div>
+  </article>`;
+}
+function bindCardActions(){
+  $$('.card').forEach(card=>{ card.addEventListener('click',ev=>{ if(ev.target.closest('[data-fav]'))return; location.hash='#/event/'+card.dataset.id; }); card.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ location.hash='#/event/'+card.dataset.id; } }); });
+  $$('[data-fav]').forEach(btn=>btn.addEventListener('click',ev=>{ ev.stopPropagation(); toggleFav(btn.dataset.fav); btn.classList.toggle('on'); btn.innerHTML=`<svg class="icon"><use href="#${btn.classList.contains('on')?'i-heart-filled':'i-heart'}"/></svg>`; if(state.showFavs) renderGrid(); }));
+}
+
+/* ============ CATALOG ============ */
+function renderCatalog({date,price,showFavs,title,subtitle}){
+  resetFilters(); if(date)state.date=date; if(price)state.price=price; if(showFavs)state.showFavs=showFavs;
+  app().innerHTML=`<section class="section container" style="padding-top:32px">
+    <div class="section-head"><div><h2>${esc(title)}</h2><div class="sub">${esc(subtitle||'')}</div></div><a href="#/" class="btn ghost"><svg class="icon"><use href="#i-arrow-left"/></svg>Все события</a></div>
+    <div class="catalog"><aside class="filter-rail">${filterRailHTML()}</aside><div>
+      <div class="toolbar"><div class="result-count" id="resultCount"></div><div class="toolbar-right"><div class="seg" id="viewSeg"><button data-view="grid" class="active"><svg class="icon"><use href="#i-grid"/></svg></button><button data-view="list"><svg class="icon"><use href="#i-list"/></svg></button></div></div></div>
+      <div class="grid" id="eventsGrid"></div><div id="pagination" style="margin-top:22px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap"></div>
+    </div></div></section>`;
+  bindFilters(); renderGrid(); setActiveNav(); track('page_view',{path:title});
+}
+
+/* ============ COLLECTIONS ============ */
+function renderCollections(){
+  const el=$('#collectionsGrid'); if(!el)return;
+  el.innerHTML=db.collections.map(c=>{
+    const count=db.collection_items.filter(ci=>ci.collection_id===c.id).length;
+    return `<article class="card" data-col="${esc(c.id)}" tabindex="0"><div class="card-img"><div class="placeholder"><svg class="icon"><use href="#i-layers"/></svg></div></div><div class="card-body"><div class="card-cat">Подборка</div><div class="card-title">${esc(c.name)}</div><div class="card-meta"><span class="row">${count} ${plural(count,'событие','события','событий')}</span></div></div></article>`;
+  }).join('')||'<div class="empty">Подборок пока нет</div>';
+  $$('[data-col]').forEach(card=>card.onclick=()=>openCollection(card.dataset.col));
+}
+function openCollection(id){
+  const c=db.collections.find(x=>x.id===id); if(!c)return;
+  const items=db.collection_items.filter(ci=>ci.collection_id===id).sort((a,b)=>a.sort_order-b.sort_order);
+  const evs=items.map(it=>db.events.find(e=>e.id===it.event_id)).filter(Boolean);
+  openModal(`<h2>${esc(c.name)}</h2><p style="color:var(--muted);margin-bottom:14px">${evs.length} ${plural(evs.length,'событие','события','событий')}</p><div style="display:flex;flex-direction:column;gap:8px">${evs.map(e=>`<a href="#/event/${esc(e.id)}" data-close style="display:flex;gap:10px;padding:8px;border-radius:10px;background:var(--surface-2);align-items:center"><div style="width:46px;height:46px;border-radius:8px;background:var(--grad);flex-shrink:0;display:grid;place-items:center;color:#fff"><svg class="icon"><use href="#i-calendar"/></svg></div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13.5px">${esc(e.title)}</div><div style="font-size:12px;color:var(--muted)">${fmtDateShort(e.start_at)} · ${fmtPrice(e.price)}</div></div></a>`).join('')||'<p style="color:var(--muted)">События не найдены</p>'}</div>`);
+}
+
+/* ============ DETAIL ============ */
+let galleryIdx=0;
+function renderDetail(id){
+  const e=db.events.find(x=>x.id===id);
+  if(!e){ app().innerHTML=`<div class="container section"><div class="empty"><svg class="icon"><use href="#i-alert-circle"/></svg><h3>Событие не найдено</h3><a href="#/" class="btn" style="margin-top:14px">На главную</a></div></div>`; return; }
+  const v=e.venue||{}; galleryIdx=0;
+  const related=db.events.filter(x=>x.id!==e.id&&(x.category===e.category||x.venue_id===e.venue_id)).slice(0,4);
+  const fav=isFav(e.id);
+  const imgs=e.images||[];
+  app().innerHTML=`<div class="container">
+    <div class="detail-back"><a href="#/" class="btn ghost sm"><svg class="icon"><use href="#i-arrow-left"/></svg>Назад</a></div>
+    <div class="detail-hero">
+      <div class="detail-gallery" id="detailGallery">${imgs.length?`<img src="${esc(imgs[0].url)}" alt="${esc(e.title)}" id="mainImg">${imgs.length>1?`<button class="gallery-nav prev" id="gPrev"><svg class="icon"><use href="#i-chevron-left"/></svg></button><button class="gallery-nav next" id="gNext"><svg class="icon"><use href="#i-chevron-right"/></svg></button><div class="gallery-dots" id="gDots">${imgs.map((_,i)=>`<button data-gi="${i}" class="${i===0?'active':''}"></button>`).join('')}</div>`:''}`:`<div class="placeholder"><svg class="icon"><use href="#i-image"/></svg></div>`}</div>
+      <div class="detail-side">
+        <div class="card-cat">${esc(e.category||'Событие')}</div>
+        <h1>${esc(e.title)}</h1>
+        <div class="detail-meta">
+          <div class="line"><svg class="icon"><use href="#i-calendar"/></svg><span><b>${fmtDate(e.start_at)}</b>${e.end_at?' — '+fmtTime(e.end_at):''}</span></div>
+          <div class="line"><svg class="icon"><use href="#i-map-pin"/></svg><span>${esc(v.name||CFG.city)}${v.address?'<br><span style="color:var(--muted)">'+esc(v.address)+'</span>':''}</span></div>
+          ${e.age_limit?`<div class="line"><svg class="icon"><use href="#i-info"/></svg><span>${esc(e.age_limit)}</span></div>`:''}
+          <div class="line"><svg class="icon"><use href="#i-ticket"/></svg><span class="price-tag ${!e.price?'free':''}">${fmtPrice(e.price)}</span></div>
+        </div>
+        <div class="detail-actions">
+          ${e.ticket_url?`<a href="${esc(e.ticket_url)}" target="_blank" rel="noopener" class="btn lg grad" id="btnTicket"><svg class="icon"><use href="#i-ticket"/></svg>Купить билет</a>`:''}
+          <button class="btn ghost lg" id="detailFav"><svg class="icon"><use href="#${fav?'i-heart-filled':'i-heart'}"/></svg>${fav?'В избранном':'В избранное'}</button>
+          <button class="btn ghost lg" id="detailShare"><svg class="icon"><use href="#i-share"/></svg>Поделиться</button>
+          <button class="btn ghost lg" id="detailIcs"><svg class="icon"><use href="#i-download"/></svg>В календарь (.ics)</button>
+        </div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div><h2 style="margin-bottom:12px">О событии</h2><div class="desc">${esc(e.description||'Описание пока не добавлено.')}</div></div>
+      <aside class="detail-aside"><div class="aside-card"><h3>Место</h3><div style="color:var(--text-2);font-size:13.5px">${esc(v.name||'—')}</div><div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(v.address||'')}</div>${v.phone?`<div style="margin-top:5px;font-size:12.5px;color:var(--muted)">☎ ${esc(v.phone)}</div>`:''}<div id="detailMap"></div></div></aside>
+    </div>
+    ${related.length?`<section class="section"><div class="section-head"><div><h2>Похожие</h2></div></div><div class="grid">${related.map(cardHTML).join('')}</div></section>`:''}
+  </div>`;
+  bindCardActions(); setActiveNav();
+  // gallery
+  const setImg=i=>{ if(!imgs.length)return; galleryIdx=(i+imgs.length)%imgs.length; const mi=$('#mainImg'); if(mi) mi.src=imgs[galleryIdx].url; $$('#gDots button').forEach((d,j)=>d.classList.toggle('active',j===galleryIdx)); };
+  $('#gPrev')?.addEventListener('click',()=>setImg(galleryIdx-1));
+  $('#gNext')?.addEventListener('click',()=>setImg(galleryIdx+1));
+  $$('#gDots button').forEach(d=>d.onclick=()=>setImg(parseInt(d.dataset.gi)));
+  // actions
+  $('#btnTicket')?.addEventListener('click',()=>{ track('ticket_click',{event_id:e.id}); });
+  $('#detailFav').onclick=()=>{ toggleFav(e.id); const b=$('#detailFav'); const on=isFav(e.id); b.innerHTML=`<svg class="icon"><use href="#${on?'i-heart-filled':'i-heart'}"/></svg>${on?'В избранном':'В избранное'}`; };
+  $('#detailShare').onclick=()=>{ track('share',{event_id:e.id}); if(navigator.share)navigator.share({title:e.title,url:location.href}).catch(()=>{}); else navigator.clipboard?.writeText(location.href).then(()=>toast('Ссылка скопирована')); };
+  $('#detailIcs').onclick=()=>{ track('ics',{event_id:e.id}); downloadICS(e); };
+  if(v.lat&&v.lng){ setTimeout(()=>{ const map=L.map('detailMap',{scrollWheelZoom:false}).setView([v.lat,v.lng],15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map); L.marker([v.lat,v.lng]).addTo(map); },120); }
+  track('page_view',{event_id:e.id,path:'event:'+e.id});
+  sb.from('events').update({views:(e.views||0)+1}).eq('id',e.id).then(()=>{});
+}
+function downloadICS(e){
+  const dt=new Date(e.start_at); const fmt=d=>d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const end=e.end_at?new Date(e.end_at):new Date(dt.getTime()+2*3600000);
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Afisha Tyumen//RU','BEGIN:VEVENT',`UID:${e.id}@afisha`,`DTSTAMP:${fmt(new Date())}`,`DTSTART:${fmt(dt)}`,`DTEND:${fmt(end)}`,`SUMMARY:${(e.title||'').replace(/\n/g,' ')}`,`LOCATION:${(e.venue?.address||'').replace(/\n/g,' ')}`,`DESCRIPTION:${(e.description||'').replace(/\n/g,'\\n').slice(0,500)}`,'END:VEVENT','END:VCALENDAR'];
+  const blob=new Blob([lines.join('\r\n')],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`event-${e.id}.ics`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); toast('Файл .ics скачан');
+}
+
+/* ============ MAP ============ */
+let publicMap=null,publicMarkers=[];
+function renderMap(){
+  app().innerHTML=`<section class="section container" style="padding-top:32px"><div class="section-head"><div><h2>События на карте</h2><div class="sub">Кликните на маркер</div></div><a href="#/" class="btn ghost"><svg class="icon"><use href="#i-arrow-left"/></svg>Все</a></div><div id="mapContainer"></div></section>`;
+  setTimeout(()=>{ if(!publicMap){ publicMap=L.map('mapContainer').setView(CFG.center,CFG.zoom); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(publicMap); } else publicMap.invalidateSize(); publicMarkers.forEach(m=>m.remove()); publicMarkers=[];
+    db.events.forEach(e=>{ if(!e.venue?.lat||!e.venue?.lng)return; const m=L.marker([e.venue.lat,e.venue.lng]).addTo(publicMap).bindPopup(`<b>${esc(e.title)}</b><br>${fmtDateShort(e.start_at)} · ${fmtPrice(e.price)}<br><a href="#/event/${esc(e.id)}" style="color:var(--accent)">Подробнее →</a>`); publicMarkers.push(m); });
+    publicMap.invalidateSize(); },80);
+  setActiveNav(); track('page_view',{path:'map'});
+}
+
+/* ============ CALENDAR ============ */
+function renderCalendar(){
+  const now=new Date(); const year=now.getFullYear(),month=now.getMonth();
+  const first=new Date(year,month,1); const startDow=(first.getDay()+6)%7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const counts={}; db.events.forEach(e=>{ const d=new Date(e.start_at); if(d.getFullYear()===year&&d.getMonth()===month){ const k=d.getDate(); counts[k]=(counts[k]||0)+1; } });
+  const monthName=now.toLocaleString('ru-RU',{month:'long',year:'numeric'});
+  let cells=''; ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d=>cells+=`<div class="dow">${d}</div>`);
+  for(let i=0;i<startDow;i++)cells+=`<div class="cal-day other"></div>`;
+  for(let d=1;d<=daysInMonth;d++){ const isToday=d===now.getDate(); const cnt=counts[d]||0; cells+=`<div class="cal-day ${isToday?'today':''}" data-day="${d}"><div>${d}</div>${cnt?`<div class="cnt">${cnt}</div>`:''}</div>`; }
+  app().innerHTML=`<section class="section container" style="padding-top:32px"><div class="section-head"><div><h2>Календарь</h2><div class="sub" style="text-transform:capitalize">${monthName}</div></div></div><div class="calendar-grid">${cells}</div><div id="calDayList" style="margin-top:24px"></div></section>`;
+  $$('.cal-day[data-day]').forEach(el=>el.onclick=()=>{ const day=parseInt(el.dataset.day); const list=db.events.filter(e=>{ const d=new Date(e.start_at); return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day; }).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)); $('#calDayList').innerHTML=`<h3 style="margin-bottom:12px">${day} ${now.toLocaleString('ru-RU',{month:'long'})} · ${list.length} ${plural(list.length,'событие','события','событий')}</h3><div class="grid">${list.map(cardHTML).join('')||'<div class="empty">Нет событий</div>'}</div>`; bindCardActions(); });
+  setActiveNav(); track('page_view',{path:'calendar'});
+}
+
+/* ============ ADVERTISE ============ */
+function renderAdvertise(){
+  app().innerHTML=`<section class="section container" style="padding-top:32px;max-width:720px"><div class="section-head"><div><h2>Рекламодателям</h2><div class="sub">Расскажите о себе аудитории афиши</div></div></div>
+    <div class="panel"><div class="form-grid"><div class="field"><label>Имя *</label><input id="advName"></div><div class="field"><label>Контакт (email/тел) *</label><input id="advContact"></div><div class="field"><label>Бюджет</label><input id="advBudget" placeholder="например, 50 000 ₽"></div></div><div class="field" style="margin-top:12px"><label>Сообщение</label><textarea id="advMessage"></textarea></div><div class="row-actions"><button class="btn" id="advSend"><svg class="icon"><use href="#i-send"/></svg>Отправить заявку</button></div></div></section>`;
+  $('#advSend').onclick=async()=>{ const name=$('#advName').value.trim(),contact=$('#advContact').value.trim(); if(!name||!contact)return toast('Заполните имя и контакт',true); await sb.from('advertiser_requests').insert({name,contact,budget:$('#advBudget').value.trim(),message:$('#advMessage').value.trim()}); toast('Заявка отправлена'); $('#advName').value=$('#advContact').value=$('#advBudget').value=$('#advMessage').value=''; };
+  track('page_view',{path:'advertise'});
+}
+
+/* ============ PUBLIC REPORT (token) ============ */
+async function renderPublicReport(token){
+  if(!token){ app().innerHTML='<div class="container section"><div class="empty">Отчёт не найден</div></div>'; return; }
+  const {data,error}=await sb.from('reports').select('*').eq('token',token).single();
+  if(error||!data){ app().innerHTML='<div class="container section"><div class="empty"><svg class="icon"><use href="#i-alert-circle"/></svg><h3>Отчёт не найден или устарел</h3></div></div>'; return; }
+  const p=data.payload||{};
+  app().innerHTML=`<section class="section container" style="padding-top:32px"><div class="section-head"><div><h2>Отчёт по кампании</h2><div class="sub">${esc(p.name||'')} · ${esc(p.advertiser||'')}</div></div><button class="btn" onclick="window.print()"><svg class="icon"><use href="#i-download"/></svg>Скачать PDF</button></div>
+    <div class="stats"><div class="stat"><div class="label"><svg class="icon"><use href="#i-eye"/></svg>Показы</div><b>${p.impressions||0}</b></div><div class="stat"><div class="label"><svg class="icon"><use href="#i-mouse-pointer"/></svg>Клики</div><b>${p.clicks||0}</b></div><div class="stat"><div class="label"><svg class="icon"><use href="#i-trending-up"/></svg>CTR</div><b>${p.ctr||'—'}</b></div><div class="stat"><div class="label"><svg class="icon"><use href="#i-tag"/></svg>Расход</div><b>${p.spent||0} ₽</b></div></div>
+    <div class="panel"><h3>По дням</h3><div class="bars-chart">${(p.by_day||[]).map(d=>`<div class="col"><div class="bar" style="height:${d.impressions?Math.max(4,d.impressions/Math.max(...(p.by_day||[]).map(x=>x.impressions||1))*100):4}%" title="${d.impressions} показов"></div><div class="lbl">${d.day}</div></div>`).join('')||'<p style="color:var(--muted)">Нет данных</p>'}</div></div>
+    <div class="panel"><h3>Устройства</h3><div class="kpi-bars">${(p.devices||[]).map(d=>`<div class="kpi-row"><div class="name">${esc(d.device)}</div><div class="bar"><span style="width:${d.pct}%"></span></div><div class="num">${d.cnt}</div></div>`).join('')||'<p style="color:var(--muted)">Нет данных</p>'}</div></div>
+  </section>`;
+}
+
+/* ============ AD SLOT ============ */
+async function loadAd(){
+  if(db.settings.features?.ads===false){ $('#adSlot')?.remove(); return; }
+  const now=new Date().toISOString();
+  const valid=db.ads.filter(a=>a.active&&(!a.start_at||a.start_at<=now)&&(!a.end_at||a.end_at>=now)&&(!a.targeting?.max||(a.impressions||0)<a.targeting.max));
+  const slot=$('#adSlot'); if(!slot)return;
+  if(!valid.length){ slot.innerHTML=''; return; }
+  const totalW=valid.reduce((s,a)=>s+(a.weight||1),0); let r=Math.random()*totalW,chosen=valid[0];
+  for(const a of valid){ r-=(a.weight||1); if(r<=0){ chosen=a; break; } }
+  const html=chosen.image_url?`<a href="${esc(chosen.link_url||'#')}" target="_blank" rel="noopener" data-ad="${esc(chosen.id)}"><img src="${esc(chosen.image_url)}" alt="${esc(chosen.name)}"></a>`:`<a href="${esc(chosen.link_url||'#')}" target="_blank" rel="noopener" data-ad="${esc(chosen.id)}" style="padding:22px;display:block;font-weight:600">${esc(chosen.name)}</a>`;
+  slot.innerHTML=html+'<span class="ad-label">Реклама</span>';
+  const link=$('[data-ad]',slot);
+  if(link){
+    track('ad_impression',{ad_id:chosen.id});
+    link.addEventListener('click',()=>track('ad_click',{ad_id:chosen.id}));
+  }
+}
+
+/* ================================================================
+   ADMIN
+=============================================================== */
+let session=null, adminTab='dashboard';
+async function showAdmin(){ $('#userApp').classList.add('hidden'); $('#adminApp').classList.remove('hidden'); if(!session){ const {data}=await sb.auth.getSession(); session=data.session; } renderAdmin(); }
+function showSite(){ $('#adminApp').classList.add('hidden'); $('#userApp').classList.remove('hidden'); router(); window.scrollTo(0,0); }
+$('#serviceEntry')?.addEventListener('click',e=>{ e.preventDefault(); showAdmin(); });
+
+function renderAdmin(){
+  if(!session){ $('#adminApp').innerHTML=adminLoginHTML(); bindLogin(); return; }
+  $('#adminApp').innerHTML=adminShellHTML(); bindAdminShell(); renderAdminTab(adminTab);
+}
+function adminLoginHTML(){
+  return `<div class="login-wrap"><div class="login-card"><a href="#/" class="brand"><span class="brand-mark">А</span>Афиша<span style="color:var(--text)">Тюмень</span></a><h2>Служебный вход</h2>
+    <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username"></div>
+    <div class="field" style="margin-top:10px"><label>Пароль</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+    <button class="btn block" id="loginBtn" style="margin-top:16px">Войти</button>
+    <button class="btn ghost block" id="backToSite" style="margin-top:8px">← На сайт</button>
+    <p style="color:var(--muted);font-size:12.5px;margin-top:12px" id="loginMsg">Вход для администраторов</p>
+  </div></div>`;
+}
+function bindLogin(){
+  $('#backToSite').onclick=showSite;
+  $('#loginBtn').onclick=async()=>{
+    const email=$('#loginEmail').value.trim(),pass=$('#loginPass').value;
+    $('#loginMsg').textContent='Вход…';
+    try{ const {data,error}=await sb.auth.signInWithPassword({email,password:pass}); if(error)throw error; session=data.session; toast('Добро пожаловать'); renderAdmin(); }
+    catch(err){ $('#loginMsg').textContent='Ошибка: '+err.message; }
+  };
+}
+const ADMIN_TABS=[
+  {group:'Основное'},{id:'dashboard',label:'Аналитика',icon:'i-bar-chart'},{id:'events',label:'События',icon:'i-drama'},{id:'venues',label:'Площадки',icon:'i-map-pin'},{id:'categories',label:'Категории',icon:'i-tag'},{id:'collections',label:'Подборки',icon:'i-layers'},
+  {group:'Монетизация'},{id:'ads',label:'Реклама',icon:'i-megaphone'},{id:'requests',label:'Заявки',icon:'i-message'},
+  {group:'Обслуживание'},{id:'maintenance',label:'Обслуживание',icon:'i-wrench'},{id:'errors',label:'Сценарии ошибок',icon:'i-alert-triangle'},
+  {group:'Настройки'},{id:'settings',label:'Настройки',icon:'i-settings'},{id:'data',label:'Данные',icon:'i-database'},
+];
+function adminShellHTML(){
+  return `<div class="admin-layout">
+    <aside class="admin-side" id="adminSide">
+      <a href="#/" class="brand" onclick="event.preventDefault();showSite()"><span class="brand-mark">А</span>Афиша</a>
+      ${ADMIN_TABS.map(t=>t.group?`<div class="nav-group">${t.group}</div>`:`<button class="admin-nav ${t.id===adminTab?'active':''}" data-tab="${t.id}"><svg class="icon"><use href="#${t.icon}"/></svg>${t.label}</button>`).join('')}
+      <button class="admin-nav" id="logoutBtn" style="margin-top:auto;color:var(--accent)"><svg class="icon"><use href="#i-log-out"/></svg>Выйти</button>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-head"><h1 id="adminTitle">Аналитика</h1><div style="display:flex;gap:7px"><button class="btn ghost sm" id="backSite2"><svg class="icon"><use href="#i-arrow-left"/></svg>Сайт</button><button class="icon-btn" id="sideToggle" style="display:none"><svg class="icon"><use href="#i-list"/></svg></button></div></div>
+      <div id="adminContent"></div>
+    </main>
+  </div>`;
+}
+function bindAdminShell(){
+  $$('.admin-nav[data-tab]').forEach(b=>b.onclick=()=>{ adminTab=b.dataset.tab; $$('.admin-nav[data-tab]').forEach(x=>x.classList.toggle('active',x===b)); $('#adminTitle').textContent=ADMIN_TABS.find(t=>t.id===adminTab)?.label||''; renderAdminTab(adminTab); $('#adminSide').classList.remove('open'); });
+  $('#logoutBtn').onclick=async()=>{ try{ await sb.auth.signOut(); }catch{} session=null; showSite(); };
+  $('#backSite2').onclick=showSite;
+  const st=$('#sideToggle'); if(st){ st.style.display=window.innerWidth<=900?'grid':'none'; st.onclick=()=>$('#adminSide').classList.toggle('open'); }
+}
+function renderAdminTab(tab){
+  if(tab==='dashboard')renderDashboard();
+  else if(tab==='events')renderEventsAdmin();
+  else if(tab==='venues')renderVenuesAdmin();
+  else if(tab==='categories')renderCategoriesAdmin();
+  else if(tab==='collections')renderCollectionsAdmin();
+  else if(tab==='ads')renderAdsAdmin();
+  else if(tab==='requests')renderRequestsAdmin();
+  else if(tab==='maintenance')renderMaintenanceAdmin();
+  else if(tab==='errors')renderErrorsAdmin();
+  else if(tab==='settings')renderSettingsAdmin();
+  else if(tab==='data')renderDataAdmin();
+}
+
+/* ---------- DASHBOARD ---------- */
+let dashPeriod=7;
+async function renderDashboard(){
+  $('#adminContent').innerHTML=`<div class="panel"><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center"><span style="color:var(--muted);font-size:13px">Период:</span>${[1,7,30,90].map(d=>`<button class="btn ${dashPeriod===d?'':'ghost'} sm" data-period="${d}">${d}д</button>`).join('')}<button class="btn ghost sm" data-period="all">Всё</button><span style="flex:1"></span><button class="btn" id="pdfReport"><svg class="icon"><use href="#i-download"/></svg>PDF для рекламодателя</button><button class="btn ghost" id="csvExport"><svg class="icon"><use href="#i-download"/></svg>CSV</button></div></div><div id="dashBody"><div class="skeleton" style="height:200px"></div></div>`;
+  $$('[data-period]').forEach(b=>b.onclick=()=>{ dashPeriod=b.dataset.period==='all'?'all':parseInt(b.dataset.period); renderDashboard(); });
+  const to=new Date(); let from=new Date();
+  if(dashPeriod==='all') from=new Date('2020-01-01'); else from.setDate(from.getDate()-dashPeriod);
+  const fromIso=from.toISOString(), toIso=to.toISOString();
+  try{
+    const [summary,byDay,top,sources,devices,hours,searches,ads]=await Promise.all([
+      sb.rpc('analytics_summary',{from_ts:fromIso,to_ts:toIso}),
+      sb.rpc('analytics_by_day',{from_ts:fromIso,to_ts:toIso}),
+      sb.rpc('analytics_top_events',{from_ts:fromIso,to_ts:toIso,lim:15}),
+      sb.rpc('analytics_sources',{from_ts:fromIso,to_ts:toIso}),
+      sb.rpc('analytics_devices',{from_ts:fromIso,to_ts:toIso}),
+      sb.rpc('analytics_hours',{from_ts:fromIso,to_ts:toIso}),
+      sb.rpc('analytics_searches',{from_ts:fromIso,to_ts:toIso,lim:20}),
+      sb.rpc('analytics_ads',{from_ts:fromIso,to_ts:toIso}),
+    ]);
+    const s=summary.data||{}; const days=byDay.data||[]; const tops=top.data||[]; const srcs=sources.data||[]; const devs=devices.data||[]; const hrs=hours.data||[]; const srch=searches.data||[]; const adsData=ads.data||[];
+    const maxDay=Math.max(...days.map(d=>+d.views),1);
+    const maxTop=Math.max(...tops.map(t=>+t.views),1);
+    const maxSrc=Math.max(...srcs.map(x=>+x.cnt),1);
+    const maxHr=Math.max(...hrs.map(x=>+x.cnt),1);
+    const devTotal=devs.reduce((a,b)=>a+ +b.cnt,0)||1;
+    const ctr=s.ad_impressions?((s.ad_clicks/s.ad_impressions)*100).toFixed(2)+'%':'—';
+    $('#dashBody').innerHTML=`
+      <div class="stats">
+        <div class="stat"><div class="label"><svg class="icon"><use href="#i-eye"/></svg>Просмотры</div><b>${s.views||0}</b><div class="delta">уники: ${s.uniques||0}</div></div>
+        <div class="stat"><div class="label"><svg class="icon"><use href="#i-users"/></svg>Сессии</div><b>${s.sessions||0}</b><div class="delta">ср. время: ${Math.round((s.avg_duration||0)/1000)}с</div></div>
+        <div class="stat"><div class="label"><svg class="icon"><use href="#i-ticket"/></svg>Клики «Билет»</div><b>${s.ticket_clicks||0}</b><div class="delta">ics: ${s.ics||0} · шар: ${s.shares||0}</div></div>
+        <div class="stat"><div class="label"><svg class="icon"><use href="#i-search"/></svg>Поиски</div><b>${s.search||0}</b><div class="delta">без результата: ${s.zero_search||0}</div></div>
+        <div class="stat"><div class="label"><svg class="icon"><use href="#i-megaphone"/></svg>Реклама</div><b>${s.ad_impressions||0}</b><div class="delta">клики: ${s.ad_clicks||0} · CTR ${ctr}</div></div>
+      </div>
+      <div class="panel"><h3>Просмотры по дням</h3>${days.length?`<div class="bars-chart">${days.map(d=>`<div class="col"><div class="bar" style="height:${(+d.views/maxDay)*100}%" title="${d.views} просмотров, ${d.uniques} уников"></div><div class="lbl">${new Date(d.day).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})}</div></div>`).join('')}</div>`:'<p style="color:var(--muted)">Нет данных за период</p>'}</div>
+      <div class="panel"><h3>Топ событий</h3>${tops.length?`<div class="kpi-bars">${tops.map(t=>`<div class="kpi-row"><div class="name">${esc(t.title)}</div><div class="bar"><span style="width:${(+t.views/maxTop)*100}%"></span></div><div class="num">${t.views}</div></div>`).join('')}</div>`:'<p style="color:var(--muted)">Нет данных</p>'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="panel"><h3>Источники</h3>${srcs.length?`<div class="kpi-bars">${srcs.map(x=>`<div class="kpi-row"><div class="name">${esc(x.source)}</div><div class="bar"><span style="width:${(+x.cnt/maxSrc)*100}%"></span></div><div class="num">${x.cnt}</div></div>`).join('')}</div>`:'<p style="color:var(--muted)">Нет данных</p>'}</div>
+        <div class="panel"><h3>Устройства</h3>${devs.length?`<div class="kpi-bars">${devs.map(d=>`<div class="kpi-row"><div class="name">${esc(d.device)}</div><div class="bar"><span style="width:${(+d.cnt/devTotal)*100}%"></span></div><div class="num">${d.cnt}</div></div>`).join('')}</div>`:'<p style="color:var(--muted)">Нет данных</p>'}</div>
+      </div>
+      <div class="panel"><h3>Активность по часам</h3>${hrs.length?`<div class="heatmap">${Array.from({length:24},(_,h)=>{ const v=hrs.find(x=>+x.hour===h)?.cnt||0; const op=maxHr?Math.max(.08,+v/maxHr):0.08; return `<div style="background:color-mix(in srgb,var(--accent) ${Math.round(op*100)}%,var(--surface-3))" title="${h}:00 — ${v}"></div>`; }).join('')}</div><div class="heatmap" style="margin-top:4px">${Array.from({length:24},(_,h)=>`<div class="lbl">${h%6===0?h:''}</div>`).join('')}</div>`:'<p style="color:var(--muted)">Нет данных</p>'}</div>
+      <div class="panel"><h3>Поисковые запросы</h3>${srch.length?`<div class="table-wrap"><table><thead><tr><th>Запрос</th><th>Всего</th><th>Без результата</th></tr></thead><tbody>${srch.map(x=>`<tr><td>${esc(x.query)}</td><td>${x.cnt}</td><td style="color:${+x.zero>0?'var(--warn)':'inherit'}">${x.zero}</td></tr>`).join('')}</tbody></table></div>`:'<p style="color:var(--muted)">Нет поисковых запросов</p>'}</div>
+      <div class="panel"><h3>Реклама по кампаниям</h3>${adsData.length?`<div class="table-wrap"><table><thead><tr><th>Кампания</th><th>Рекламодатель</th><th>Показы</th><th>Клики</th><th>Расход</th></tr></thead><tbody>${adsData.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.advertiser||'')}</td><td>${a.impressions}</td><td>${a.clicks}</td><td>${(+a.spent||0).toFixed(0)} ₽</td></tr>`).join('')}</tbody></table></div>`:'<p style="color:var(--muted)">Нет кампаний</p>'}</div>
+    `;
+    $('#pdfReport').onclick=()=>exportAnalyticsPDF({s,days,tops,srcs,devs,srch,adsData,period:dashPeriod});
+    $('#csvExport').onclick=()=>exportCSV({days,tops,srcs,devs,srch,adsData});
+  }catch(e){
+    $('#dashBody').innerHTML=`<div class="empty"><svg class="icon"><use href="#i-alert-circle"/></svg><h3>Не удалось загрузить аналитику</h3><p style="margin-top:6px">${esc(e.message)}</p></div>`;
+  }
+}
+function exportAnalyticsPDF({s,days,tops,srcs,devs,srch,adsData,period}){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF();
+  doc.setFontSize(18); doc.text('Афиша Тюмени — отчёт для рекламодателя',14,20);
+  doc.setFontSize(10); doc.setTextColor(120); doc.text('Период: '+ (period==='all'?'всё время':period+' дней') + ' · ' + new Date().toLocaleString('ru-RU'),14,27);
+  doc.setTextColor(0); doc.setFontSize(12);
+  doc.autoTable({head:[['Метрика','Значение']],body:[['Просмотры',String(s.views||0)],['Уникальные',String(s.uniques||0)],['Сессии',String(s.sessions||0)],['Ср. время (с)',String(Math.round((s.avg_duration||0)/1000))],['Клики «Билет»',String(s.ticket_clicks||0)],['ics',String(s.ics||0)],['Поделиться',String(s.shares||0)],['Показы рекламы',String(s.ad_impressions||0)],['Клики рекламы',String(s.ad_clicks||0)],['CTR', s.ad_impressions?((s.ad_clicks/s.ad_impressions)*100).toFixed(2)+'%':'—']],startY:34,theme:'grid'});
+  if(tops.length){ doc.autoTable({head:[['Событие','Просмотры','Клики билет']],body:tops.map(t=>[t.title,String(t.views),String(t.ticket_clicks)]),startY:doc.lastAutoTable.finalY+8,theme:'striped'}); }
+  if(srcs.length){ doc.autoTable({head:[['Источник','Просмотры']],body:srcs.map(x=>[x.source,String(x.cnt)]),startY:doc.lastAutoTable.finalY+8,theme:'grid'}); }
+  if(devs.length){ doc.autoTable({head:[['Устройство','Просмотры']],body:devs.map(d=>[d.device,String(d.cnt)]),startY:doc.lastAutoTable.finalY+8,theme:'grid'}); }
+  if(adsData.length){ doc.autoTable({head:[['Кампания','Рекламодатель','Показы','Клики','Расход']],body:adsData.map(a=>[a.name,a.advertiser||'',String(a.impressions),String(a.clicks),(+a.spent||0).toFixed(0)+' ₽']),startY:doc.lastAutoTable.finalY+8,theme:'striped'}); }
+  doc.save('afisha-report.pdf'); toast('PDF скачан');
+}
+function exportCSV({days,tops,srcs,devs,srch,adsData}){
+  const rows=[['Тип','Ключ','Значение1','Значение2']];
+  days.forEach(d=>rows.push(['day',d.day,d.views,d.uniques]));
+  tops.forEach(t=>rows.push(['event',t.title,t.views,t.ticket_clicks]));
+  srcs.forEach(x=>rows.push(['source',x.source,x.cnt,'']));
+  devs.forEach(d=>rows.push(['device',d.device,d.cnt,'']));
+  srch.forEach(x=>rows.push(['search',x.query,x.cnt,x.zero]));
+  adsData.forEach(a=>rows.push(['ad',a.name,a.impressions,a.clicks]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='analytics.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); toast('CSV скачан');
+}
+
+/* ---------- EVENTS ADMIN ---------- */
+let eventsPage=1, editEventId=null, editImages=[];
+function renderEventsAdmin(){
+  const perPage=10; const total=db.events.length; const pages=Math.max(1,Math.ceil(total/perPage)); if(eventsPage>pages)eventsPage=pages;
+  const list=db.events.slice((eventsPage-1)*perPage,eventsPage*perPage);
+  $('#adminContent').innerHTML=`
+    <div class="panel"><h3>Новое событие</h3>
+      <div class="form-grid">
+        <div class="field"><label>Название *</label><input id="evTitle"></div>
+        <div class="field"><label>Категория</label><input id="evCategory" list="catList"><datalist id="catList">${db.categories.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div>
+        <div class="field"><label>Начало *</label><input id="evStart" type="datetime-local"></div>
+        <div class="field"><label>Конец</label><input id="evEnd" type="datetime-local"></div>
+        <div class="field"><label>Цена (0=бесплатно)</label><input id="evPrice" type="number" value="0" min="0"></div>
+        <div class="field"><label>Возраст</label><input id="evAge" placeholder="6+" maxlength="4"></div>
+        <div class="field"><label>Билеты (URL)</label><input id="evTicket" placeholder="https://"></div>
+        <div class="field"><label>Площадка</label><select id="evVenue"><option value="">—</option>${db.venues.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join('')}</select></div>
+        <div class="field"><label>Статус</label><select id="evStatus"><option value="published">Опубликовано</option><option value="draft">Черновик</option></select></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Описание</label><textarea id="evDesc"></textarea></div>
+      <div class="field" style="margin-top:12px"><label>Изображения (до 5)</label><div class="dropzone" id="evDrop"><svg class="icon"><use href="#i-upload"/></svg><div>Перетащите файлы или нажмите</div></div><input type="file" id="evFile" accept="image/*" multiple class="hidden"><div class="img-grid" id="evImgs"></div><div class="row-actions"><button class="btn ghost sm" id="evPickStorage"><svg class="icon"><use href="#i-database"/></svg>Из хранилища</button><input id="evImgUrl" placeholder="или вставьте URL" style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px"><button class="btn ghost sm" id="evAddUrl"><svg class="icon"><use href="#i-link"/></svg>Добавить</button></div></div>
+      <div class="row-actions"><button class="btn" id="evCreate"><svg class="icon"><use href="#i-save"/></svg>Создать</button></div>
+    </div>
+    <div class="panel"><h3>Все события <span style="color:var(--muted);font-weight:500">${total}</span></h3>
+      <div class="table-wrap"><table><thead><tr><th>Название</th><th>Дата</th><th>Цена</th><th>Площадка</th><th>Фото</th><th>Статус</th><th></th></tr></thead><tbody>
+      ${list.map(e=>`<tr><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</td><td style="white-space:nowrap">${fmtDate(e.start_at)}</td><td>${fmtPrice(e.price)}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.venue?.name||'—')}</td><td>${(e.images||[]).length}</td><td><span class="badge-status ${e.status==='published'?'pub':'draft'}">${e.status==='published'?'опубл.':'черновик'}</span></td><td><div class="actions"><button class="btn ghost sm" data-edit="${esc(e.id)}"><svg class="icon"><use href="#i-edit"/></svg></button><button class="btn danger sm" data-del="${esc(e.id)}"><svg class="icon"><use href="#i-trash"/></svg></button></div></td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--muted)">Нет событий</td></tr>'}
+      </tbody></table></div>
+      ${pages>1?`<div class="row-actions"><button class="btn ghost sm" data-page="prev">←</button><span style="color:var(--muted);align-self:center">${eventsPage}/${pages}</span><button class="btn ghost sm" data-page="next">→</button></div>`:''}
+    </div>`;
+  initImagePicker('#evDrop','#evFile','#evImgs','#evPickStorage','#evImgUrl','#evAddUrl',()=>editImages,null);
+  $('#evCreate').onclick=()=>createEvent();
+  $$('[data-del]').forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить?'))return; await sb.from('events').delete().eq('id',b.dataset.del); await loadDB(); renderEventsAdmin(); toast('Удалено'); });
+  $$('[data-edit]').forEach(b=>b.onclick=()=>editEvent(b.dataset.edit));
+  $$('[data-page]').forEach(b=>b.onclick=()=>{ eventsPage+=b.dataset.page==='next'?1:-1; renderEventsAdmin(); });
+}
+function initImagePicker(dropSel,fileSel,gridSel,pickSel,urlSel,addSel,getArr,onChange){
+  const drop=$(dropSel),file=$(fileSel),grid=$(gridSel),pick=$(pickSel),urlIn=$(urlSel),addBtn=$(addSel);
+  const render=()=>{ const arr=getArr(); grid.innerHTML=arr.map((img,i)=>`<div class="img-tile"><img src="${esc(img.url)}">${i===0?'<span class="cover">Обложка</span>':''}<button class="rm" data-rm="${i}"><svg class="icon"><use href="#i-x"/></svg></button></div>`).join(''); $$('[data-rm]',grid).forEach(b=>b.onclick=()=>{ arr.splice(parseInt(b.dataset.rm),1); render(); onChange?.(); }); };
+  drop.onclick=()=>file.click();
+  drop.ondragover=e=>{ e.preventDefault(); drop.classList.add('drag'); };
+  drop.ondragleave=()=>drop.classList.remove('drag');
+  drop.ondrop=e=>{ e.preventDefault(); drop.classList.remove('drag'); handleFiles(e.dataTransfer.files); };
+  file.onchange=e=>handleFiles(e.target.files);
+  async function handleFiles(files){ for(const f of files){ if(getArr().length>=5){ toast('Максимум 5 изображений',true); break; } await uploadFile(f,getArr,render,onChange); } file.value=''; }
+  pick.onclick=()=>openStorageBrowser(getArr,render,onChange);
+  addBtn.onclick=()=>{ const u=urlIn.value.trim(); if(!u)return; if(getArr().length>=5)return toast('Максимум 5',true); getArr().push({url:u}); urlIn.value=''; render(); onChange?.(); };
+  render();
+}
+async function uploadFile(file,arr,render,onChange){
+  const path=`events/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const {error}=await sb.storage.from('event-images').upload(path,file,{cacheControl:'31536000',upsert:false});
+  if(error)return toast('Ошибка загрузки: '+error.message,true);
+  const {data}=sb.storage.from('event-images').getPublicUrl(path);
+  arr.push({url:data.publicUrl,storage_path:path}); render(); onChange?.();
+}
+function openStorageBrowser(arr,render,onChange){
+  openModal(`<h2>Хранилище</h2><div id="storageList" class="storage-browser"><div class="skeleton" style="height:100px"></div></div>`,true);
+  sb.storage.from('event-images').list('events',{limit:100,sortBy:{column:'created_at',order:'desc'}}).then(({data,error})=>{
+    if(error){ $('#storageList').innerHTML=`<p style="color:var(--danger)">${esc(error.message)}</p>`; return; }
+    $('#storageList').innerHTML=`<div class="img-grid">${(data||[]).map(f=>{ const {data:u}=sb.storage.from('event-images').getPublicUrl('events/'+f.name); return `<div class="img-tile" style="cursor:pointer" data-pick="${esc(u.publicUrl)}" data-path="${esc('events/'+f.name)}"><img src="${esc(u.publicUrl)}"></div>`; }).join('')||'<p style="color:var(--muted)">Пусто</p>'}</div>`;
+    $$('[data-pick]').forEach(t=>t.onclick=()=>{ if(arr.length>=5)return toast('Максимум 5',true); arr.push({url:t.dataset.pick,storage_path:t.dataset.path}); render(); onChange?.(); closeModal(); });
+  });
+}
+async function createEvent(){
+  const title=$('#evTitle').value.trim(); if(!title)return toast('Введите название',true);
+  const e={ id:crypto.randomUUID(), title, description:$('#evDesc').value.trim(), category:$('#evCategory').value.trim()||'Другое', start_at:$('#evStart').value?new Date($('#evStart').value).toISOString():new Date().toISOString(), end_at:$('#evEnd').value?new Date($('#evEnd').value).toISOString():null, price:parseInt($('#evPrice').value)||0, age_limit:$('#evAge').value.trim(), ticket_url:$('#evTicket').value.trim(), venue_id:$('#evVenue').value||null, status:$('#evStatus').value };
+  await sb.from('events').insert(e);
+  for(let i=0;i<editImages.length;i++){ await sb.from('event_images').insert({event_id:e.id,url:editImages[i].url,storage_path:editImages[i].storage_path||null,sort_order:i}); }
+  editImages=[]; await loadDB(); renderEventsAdmin(); toast('Создано');
+}
+async function editEvent(id){
+  const e=db.events.find(x=>x.id===id); if(!e)return; editEventId=id;
+  editImages=(e.images||[]).map(i=>({url:i.url,storage_path:i.storage_path}));
+  openModal(`<h2>Редактировать</h2>
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1"><label>Название</label><input id="edTitle" value="${esc(e.title)}"></div>
+      <div class="field"><label>Категория</label><input id="edCategory" value="${esc(e.category||'')}"></div>
+      <div class="field"><label>Цена</label><input id="edPrice" type="number" value="${e.price||0}"></div>
+      <div class="field"><label>Возраст</label><input id="edAge" value="${esc(e.age_limit||'')}"></div>
+      <div class="field"><label>Начало</label><input id="edStart" type="datetime-local" value="${toLocal(e.start_at)}"></div>
+      <div class="field"><label>Конец</label><input id="edEnd" type="datetime-local" value="${e.end_at?toLocal(e.end_at):''}"></div>
+      <div class="field"><label>Билеты</label><input id="edTicket" value="${esc(e.ticket_url||'')}"></div>
+      <div class="field"><label>Статус</label><select id="edStatus"><option value="published" ${e.status==='published'?'selected':''}>Опубликовано</option><option value="draft" ${e.status==='draft'?'selected':''}>Черновик</option></select></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>Описание</label><textarea id="edDesc">${esc(e.description||'')}</textarea></div>
+    <div class="field" style="margin-top:10px"><label>Изображения</label><div class="dropzone" id="edDrop"><svg class="icon"><use href="#i-upload"/></svg><div>Добавить</div></div><input type="file" id="edFile" accept="image/*" multiple class="hidden"><div class="img-grid" id="edImgs"></div><div class="row-actions"><button class="btn ghost sm" id="edPickStorage"><svg class="icon"><use href="#i-database"/></svg>Из хранилища</button><input id="edImgUrl" placeholder="URL" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px"><button class="btn ghost sm" id="edAddUrl"><svg class="icon"><use href="#i-link"/></svg></button></div></div>
+    <div class="row-actions"><button class="btn" id="edSave"><svg class="icon"><use href="#i-save"/></svg>Сохранить</button><button class="btn ghost" data-close>Отмена</button></div>`,true);
+  $$('#modalBody [data-close]').forEach(x=>x.onclick=closeModal);
+  initImagePicker('#edDrop','#edFile','#edImgs','#edPickStorage','#edImgUrl','#edAddUrl',()=>editImages,null);
+  $('#edSave').onclick=async()=>{
+    const upd={ title:$('#edTitle').value.trim(), category:$('#edCategory').value.trim(), price:parseInt($('#edPrice').value)||0, age_limit:$('#edAge').value.trim(), start_at:$('#edStart').value?new Date($('#edStart').value).toISOString():e.start_at, end_at:$('#edEnd').value?new Date($('#edEnd').value).toISOString():null, ticket_url:$('#edTicket').value.trim(), description:$('#edDesc').value.trim(), status:$('#edStatus').value };
+    await sb.from('events').update(upd).eq('id',id);
+    await sb.from('event_images').delete().eq('event_id',id);
+    for(let i=0;i<editImages.length;i++){ await sb.from('event_images').insert({event_id:id,url:editImages[i].url,storage_path:editImages[i].storage_path||null,sort_order:i}); }
+    await loadDB(); closeModal(); renderEventsAdmin(); toast('Сохранено');
+  };
+}
+function toLocal(iso){ const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+/* ---------- VENUES ---------- */
+function renderVenuesAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Новая площадка</h3><div class="form-grid">
+    <div class="field"><label>Название *</label><input id="vName"></div><div class="field"><label>Адрес</label><input id="vAddress"></div>
+    <div class="field"><label>Широта</label><input id="vLat" type="number" step="0.0001"></div><div class="field"><label>Долгота</label><input id="vLng" type="number" step="0.0001"></div>
+    <div class="field"><label>Телефон</label><input id="vPhone"></div></div>
+    <div class="field" style="margin-top:10px"><label>Описание</label><textarea id="vDesc"></textarea></div>
+    <div class="row-actions"><button class="btn" id="vCreate"><svg class="icon"><use href="#i-save"/></svg>Создать</button></div></div>
+    <div class="panel"><h3>Площадки (${db.venues.length})</h3><div class="table-wrap"><table><thead><tr><th>Название</th><th>Адрес</th><th>Координаты</th><th></th></tr></thead><tbody>
+    ${db.venues.map(v=>`<tr><td>${esc(v.name)}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.address||'')}</td><td>${v.lat?.toFixed(4)||'—'}, ${v.lng?.toFixed(4)||'—'}</td><td><div class="actions"><button class="btn danger sm" data-vdel="${esc(v.id)}"><svg class="icon"><use href="#i-trash"/></svg></button></div></td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--muted)">Нет</td></tr>'}</tbody></table></div></div>`;
+  $('#vCreate').onclick=async()=>{ const name=$('#vName').value.trim(); if(!name)return toast('Введите название',true); await sb.from('venues').insert({id:crypto.randomUUID(),name,address:$('#vAddress').value.trim(),lat:parseFloat($('#vLat').value)||null,lng:parseFloat($('#vLng').value)||null,phone:$('#vPhone').value.trim(),description:$('#vDesc').value.trim()}); await loadDB(); renderVenuesAdmin(); toast('Создано'); };
+  $$('[data-vdel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить?'))return; await sb.from('venues').delete().eq('id',b.dataset.vdel); await loadDB(); renderVenuesAdmin(); });
+}
+
+/* ---------- CATEGORIES ---------- */
+function renderCategoriesAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Категории</h3><div class="row-actions" style="margin-top:0;margin-bottom:14px"><input id="newCat" placeholder="Название" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13.5px"><button class="btn" id="addCat"><svg class="icon"><use href="#i-plus"/></svg>Добавить</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Категория</th><th>Событий</th><th></th></tr></thead><tbody>
+    ${db.categories.map(c=>{ const n=db.events.filter(e=>e.category===c.name).length; return `<tr><td>${esc(c.name)}</td><td>${n}</td><td><div class="actions"><button class="btn danger sm" data-cdel="${esc(c.id)}"><svg class="icon"><use href="#i-trash"/></svg></button></div></td></tr>`; }).join('')||'<tr><td colspan="3" style="color:var(--muted)">Нет категорий</td></tr>'}
+    </tbody></table></div></div>`;
+  $('#addCat').onclick=async()=>{ const name=$('#newCat').value.trim(); if(!name)return; await sb.from('categories').insert({name,slug:name.toLowerCase().replace(/\s+/g,'-')}); await loadDB(); renderCategoriesAdmin(); toast('Добавлено'); };
+  $$('[data-cdel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить?'))return; await sb.from('categories').delete().eq('id',b.dataset.cdel); await loadDB(); renderCategoriesAdmin(); });
+}
+
+/* ---------- COLLECTIONS ---------- */
+function renderCollectionsAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Новая подборка</h3><div class="form-grid"><div class="field"><label>Название</label><input id="colName"></div><div class="field"><label>Slug</label><input id="colSlug" placeholder="free-cool"></div><div class="field" style="grid-column:1/-1"><label>События</label><select id="colEvents" multiple size="8" style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px;color:var(--text);font-size:13px">${db.events.map(e=>`<option value="${esc(e.id)}">${esc(e.title)}</option>`).join('')}</select></div></div><div class="row-actions"><button class="btn" id="colCreate"><svg class="icon"><use href="#i-save"/></svg>Создать</button></div></div>
+    <div class="panel"><h3>Подборки (${db.collections.length})</h3><div class="table-wrap"><table><thead><tr><th>Название</th><th>Slug</th><th>Событий</th><th></th></tr></thead><tbody>
+    ${db.collections.map(c=>{ const n=db.collection_items.filter(ci=>ci.collection_id===c.id).length; return `<tr><td>${esc(c.name)}</td><td>${esc(c.slug||'')}</td><td>${n}</td><td><div class="actions"><button class="btn danger sm" data-coldel="${esc(c.id)}"><svg class="icon"><use href="#i-trash"/></svg></button></div></td></tr>`; }).join('')||'<tr><td colspan="4" style="color:var(--muted)">Нет</td></tr>'}
+    </tbody></table></div></div>`;
+  $('#colCreate').onclick=async()=>{ const name=$('#colName').value.trim(); if(!name)return toast('Введите название',true); const id=crypto.randomUUID(); await sb.from('collections').insert({id,name,slug:$('#colSlug').value.trim()||('c'+Date.now())}); const ids=[...$('#colEvents').selectedOptions].map(o=>o.value); for(let i=0;i<ids.length;i++){ await sb.from('collection_items').insert({collection_id:id,event_id:ids[i],sort_order:i}); } await loadDB(); renderCollectionsAdmin(); toast('Создано'); };
+  $$('[data-coldel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить?'))return; await sb.from('collections').delete().eq('id',b.dataset.coldel); await loadDB(); renderCollectionsAdmin(); });
+}
+
+/* ---------- ADS ---------- */
+function renderAdsAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Новая кампания</h3><div class="form-grid">
+    <div class="field"><label>Название *</label><input id="adName"></div><div class="field"><label>Рекламодатель</label><input id="adAdvertiser"></div>
+    <div class="field"><label>Изображение (URL)</label><input id="adImage"></div><div class="field"><label>Ссылка</label><input id="adLink"></div>
+    <div class="field"><label>Модель</label><select id="adModel"><option value="cpm">CPM</option><option value="cpc">CPC</option><option value="fixed">Фикс</option></select></div>
+    <div class="field"><label>Ставка (₽)</label><input id="adRate" type="number" value="0"></div>
+    <div class="field"><label>Бюджет (₽)</label><input id="adBudget" type="number" value="0"></div>
+    <div class="field"><label>Вес</label><input id="adWeight" type="number" value="50" min="1" max="100"></div>
+    <div class="field"><label>Начало</label><input id="adStart" type="datetime-local"></div><div class="field"><label>Конец</label><input id="adEnd" type="datetime-local"></div>
+  </div><div class="row-actions"><button class="btn" id="adCreate"><svg class="icon"><use href="#i-save"/></svg>Создать</button></div></div>
+  <div class="panel"><h3>Кампании (${db.ads.length})</h3><div class="table-wrap"><table><thead><tr><th>Название</th><th>Рекламодатель</th><th>Показы</th><th>Клики</th><th>CTR</th><th>Статус</th><th></th></tr></thead><tbody>
+  ${db.ads.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.advertiser||'')}</td><td>${a.impressions||0}</td><td>${a.clicks||0}</td><td>${a.impressions?((a.clicks/a.impressions)*100).toFixed(1)+'%':'—'}</td><td><button class="btn ${a.active?'':'gray'} sm" data-atoggle="${esc(a.id)}" data-val="${!!a.active}">${a.active?'Вкл':'Выкл'}</button></td><td><div class="actions"><button class="btn ghost sm" data-areport="${esc(a.id)}"><svg class="icon"><use href="#i-file-text"/></svg></button><button class="btn danger sm" data-adel="${esc(a.id)}"><svg class="icon"><use href="#i-trash"/></svg></button></div></td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--muted)">Нет</td></tr>'}
+  </tbody></table></div></div>`;
+  $('#adCreate').onclick=async()=>{ const name=$('#adName').value.trim(); if(!name)return toast('Введите название',true); await sb.from('ads').insert({id:crypto.randomUUID(),name,advertiser:$('#adAdvertiser').value.trim(),image_url:$('#adImage').value.trim(),link_url:$('#adLink').value.trim(),model:$('#adModel').value,rate:parseFloat($('#adRate').value)||0,budget:parseFloat($('#adBudget').value)||0,weight:parseInt($('#adWeight').value)||50,start_at:$('#adStart').value?new Date($('#adStart').value).toISOString():null,end_at:$('#adEnd').value?new Date($('#adEnd').value).toISOString():null,active:true}); await loadDB(); renderAdsAdmin(); toast('Создано'); };
+  $$('[data-atoggle]').forEach(b=>b.onclick=async()=>{ await sb.from('ads').update({active:b.dataset.val!=='true'}).eq('id',b.dataset.atoggle); await loadDB(); renderAdsAdmin(); });
+  $$('[data-adel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Удалить?'))return; await sb.from('ads').delete().eq('id',b.dataset.adel); await loadDB(); renderAdsAdmin(); });
+  $$('[data-areport]').forEach(b=>b.onclick=()=>exportAdReport(b.dataset.areport));
+}
+async function exportAdReport(adId){
+  const a=db.ads.find(x=>x.id===adId); if(!a)return;
+  const {data}=await sb.from('interactions').select('*').eq('ad_id',adId);
+  const imps=(data||[]).filter(x=>x.type==='ad_impression').length; const clicks=(data||[]).filter(x=>x.type==='ad_click').length;
+  const token=crypto.randomUUID().slice(0,12);
+  const payload={ name:a.name, advertiser:a.advertiser, impressions:imps, clicks, ctr: imps?((clicks/imps)*100).toFixed(2)+'%':'—', spent: a.model==='cpm'?(imps*a.rate/1000).toFixed(0):a.model==='cpc'?(clicks*a.rate).toFixed(0):a.rate, by_day:[], devices:[] };
+  await sb.from('reports').insert({token,ad_id:adId,payload});
+  const url=location.origin+location.pathname+'#/report/'+token;
+  navigator.clipboard?.writeText(url).then(()=>toast('Ссылка на отчёт скопирована')); openModal(`<h2>Отчёт для рекламодателя</h2><p style="color:var(--muted);margin-bottom:12px">Публичная ссылка (только метрики кампании):</p><div style="background:var(--surface-2);padding:12px;border-radius:10px;font-family:monospace;font-size:12.5px;word-break:break-all">${esc(url)}</div><div class="row-actions"><button class="btn" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('Скопировано'))"><svg class="icon"><use href="#i-copy"/></svg>Копировать</button><a class="btn ghost" href="#/report/${esc(token)}" target="_blank">Открыть</a></div>`);
+}
+
+/* ---------- REQUESTS ---------- */
+function renderRequestsAdmin(){
+  sb.from('advertiser_requests').select('*').order('created_at',{ascending:false}).then(({data,error})=>{
+    if(error){ $('#adminContent').innerHTML=`<div class="empty">${esc(error.message)}</div>`; return; }
+    $('#adminContent').innerHTML=`<div class="panel"><h3>Заявки рекламодателей (${(data||[]).length})</h3><div class="table-wrap"><table><thead><tr><th>Имя</th><th>Контакт</th><th>Бюджет</th><th>Сообщение</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${(data||[]).map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.contact)}</td><td>${esc(r.budget||'')}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.message||'')}</td><td>${esc(r.status)}</td><td><div class="actions"><button class="btn ghost sm" data-rok="${esc(r.id)}"><svg class="icon"><use href="#i-check"/></svg></button><button class="btn danger sm" data-rj="${esc(r.id)}"><svg class="icon"><use href="#i-x"/></svg></button></div></td></tr>`).join('')||'<tr><td colspan="6" style="color:var(--muted)">Заявок нет</td></tr>'}
+    </tbody></table></div></div>`;
+    $$('[data-rok]').forEach(b=>b.onclick=async()=>{ await sb.from('advertiser_requests').update({status:'approved'}).eq('id',b.dataset.rok); renderRequestsAdmin(); });
+    $$('[data-rj]').forEach(b=>b.onclick=async()=>{ await sb.from('advertiser_requests').update({status:'rejected'}).eq('id',b.dataset.rj); renderRequestsAdmin(); });
+  });
+}
+
+/* ---------- MAINTENANCE ---------- */
+function renderMaintenanceAdmin(){
+  const m=db.settings.site_mode||{mode:'on'};
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Режим сайта</h3>
+    <div class="form-grid">
+      <div class="field"><label>Режим</label><select id="mMode"><option value="on" ${m.mode==='on'?'selected':''}>Сайт работает</option><option value="maintenance" ${m.mode==='maintenance'?'selected':''}>Обслуживание (закрыт)</option><option value="readonly" ${m.mode==='readonly'?'selected':''}>Только чтение</option></select></div>
+      <div class="field"><label>Шаблон</label><select id="mTpl"><option value="">— свой текст —</option>${db.maintenance_templates.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Заголовок</label><input id="mTitle" value="${esc(m.title||'')}"></div>
+      <div class="field"><label>До (дата/время)</label><input id="mUntil" type="datetime-local" value="${m.until?toLocal(m.until):''}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Текст</label><textarea id="mBody">${esc(m.body||'')}</textarea></div>
+      <div class="field"><label>Контакт</label><input id="mContact" value="${esc(m.contact||'')}"></div>
+    </div>
+    <div class="row-actions"><button class="btn" id="mSave"><svg class="icon"><use href="#i-save"/></svg>Сохранить</button><button class="btn ghost" id="mPreview"><svg class="icon"><use href="#i-eye"/></svg>Превью</button><button class="btn ${m.mode==='maintenance'?'danger':''}" id="mToggle">${m.mode==='maintenance'?'Включить сайт':'Включить обслуживание'}</button></div>
+  </div>
+  <div class="panel"><h3>Шаблоны текстов</h3><div class="table-wrap"><table><thead><tr><th>Название</th><th>Заголовок</th><th>Тон</th><th></th></tr></thead><tbody>${db.maintenance_templates.map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.title||'')}</td><td>${esc(t.tone||'')}</td><td><div class="actions"><button class="btn ghost sm" data-tuse="${esc(t.id)}">Использовать</button></div></td></tr>`).join('')}</tbody></table></div>
+    <div class="row-actions"><input id="ntName" placeholder="Название шаблона" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px"><input id="ntTitle" placeholder="Заголовок" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px"><button class="btn" id="ntAdd"><svg class="icon"><use href="#i-plus"/></svg>Добавить шаблон</button></div></div>`;
+  $('#mSave').onclick=async()=>{ const val={mode:$('#mMode').value,title:$('#mTitle').value.trim(),body:$('#mBody').value.trim(),until:$('#mUntil').value?new Date($('#mUntil').value).toISOString():null,contact:$('#mContact').value.trim()}; await sb.from('settings').upsert({key:'site_mode',value:val}); db.settings.site_mode=val; toast('Сохранено'); };
+  $('#mTpl').onchange=()=>{ const t=db.maintenance_templates.find(x=>x.id===$('#mTpl').value); if(t){ $('#mTitle').value=t.title||''; $('#mBody').value=t.body||''; } };
+  $('#mPreview').onclick=()=>{ const val={mode:'maintenance',title:$('#mTitle').value.trim()||'Сайт на обслуживании',body:$('#mBody').value.trim()||'Скоро вернёмся',until:$('#mUntil').value?new Date($('#mUntil').value).toISOString():null}; const old=db.settings.site_mode; db.settings.site_mode=val; openModal(`<div class="maint-screen" style="min-height:auto;padding:0;background:none"><div class="cardm" style="max-width:none;padding:24px"><div class="ico"><svg class="icon"><use href="#i-wrench"/></svg></div><h1>${esc(val.title)}</h1><p>${esc(val.body)}</p></div></div>`); db.settings.site_mode=old; };
+  $('#mToggle').onclick=async()=>{ const cur=db.settings.site_mode?.mode==='maintenance'?'on':'maintenance'; await sb.from('settings').upsert({key:'site_mode',value:{...(db.settings.site_mode||{}),mode:cur}}); db.settings.site_mode={...(db.settings.site_mode||{}),mode:cur}; renderMaintenanceAdmin(); toast(cur==='maintenance'?'Сайт закрыт':'Сайт открыт'); };
+  $$('[data-tuse]').forEach(b=>b.onclick=()=>{ const t=db.maintenance_templates.find(x=>x.id===b.dataset.tuse); if(t){ $('#mTitle').value=t.title||''; $('#mBody').value=t.body||''; toast('Шаблон применён'); } });
+  $('#ntAdd').onclick=async()=>{ const name=$('#ntName').value.trim(); if(!name)return; await sb.from('maintenance_templates').insert({name,title:$('#ntTitle').value.trim(),body:'',tone:'нейтральный'}); await loadDB(); renderMaintenanceAdmin(); toast('Шаблон добавлен'); };
+}
+
+/* ---------- ERRORS ---------- */
+function renderErrorsAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Сценарии ошибок</h3><div class="table-wrap"><table><thead><tr><th>Код</th><th>Заголовок</th><th>Текст</th><th></th></tr></thead><tbody>
+  ${db.error_scenarios.map(s=>`<tr><td><b>${esc(s.code)}</b></td><td>${esc(s.title||'')}</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.body||'')}</td><td><div class="actions"><button class="btn ghost sm" data-eedit="${esc(s.id)}"><svg class="icon"><use href="#i-edit"/></svg></button></div></td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--muted)">Нет</td></tr>'}
+  </tbody></table></div></div>`;
+  $$('[data-eedit]').forEach(b=>b.onclick=()=>{ const s=db.error_scenarios.find(x=>x.id===b.dataset.eedit); if(!s)return; openModal(`<h2>Сценарий ${esc(s.code)}</h2><div class="field"><label>Заголовок</label><input id="eTitle" value="${esc(s.title||'')}"></div><div class="field" style="margin-top:10px"><label>Текст</label><textarea id="eBody">${esc(s.body||'')}</textarea></div><div class="row-actions"><button class="btn" id="eSave">Сохранить</button></div>`); $('#eSave').onclick=async()=>{ await sb.from('error_scenarios').update({title:$('#eTitle').value.trim(),body:$('#eBody').value.trim()}).eq('id',s.id); await loadDB(); closeModal(); renderErrorsAdmin(); toast('Сохранено'); }; });
+}
+
+/* ---------- SETTINGS ---------- */
+function renderSettingsAdmin(){
+  const h=db.settings.hero||{title:'',subtitle:''}; const f=db.settings.features||{};
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Главная страница</h3><div class="form-grid"><div class="field" style="grid-column:1/-1"><label>Заголовок</label><input id="setTitle" value="${esc(h.title||'')}"></div><div class="field" style="grid-column:1/-1"><label>Подзаголовок</label><input id="setSubtitle" value="${esc(h.subtitle||'')}"></div></div>
+    <div class="row-actions"><button class="btn" id="saveHero"><svg class="icon"><use href="#i-save"/></svg>Сохранить</button></div></div>
+    <div class="panel"><h3>Функции сайта</h3><label class="check-row"><input type="checkbox" id="fAds" ${f.ads!==false?'checked':''}> Реклама</label><label class="check-row"><input type="checkbox" id="fMap" ${f.map!==false?'checked':''}> Карта</label><label class="check-row"><input type="checkbox" id="fCal" ${f.calendar!==false?'checked':''}> Календарь</label><label class="check-row"><input type="checkbox" id="fSearch" ${f.search!==false?'checked':''}> Поиск</label><div class="row-actions"><button class="btn" id="saveFeat"><svg class="icon"><use href="#i-save"/></svg>Сохранить</button></div></div>`;
+  $('#saveHero').onclick=async()=>{ await sb.from('settings').upsert({key:'hero',value:{title:$('#setTitle').value.trim(),subtitle:$('#setSubtitle').value.trim()}}); db.settings.hero={title:$('#setTitle').value.trim(),subtitle:$('#setSubtitle').value.trim()}; toast('Сохранено'); };
+  $('#saveFeat').onclick=async()=>{ const val={ads:$('#fAds').checked,map:$('#fMap').checked,calendar:$('#fCal').checked,search:$('#fSearch').checked}; await sb.from('settings').upsert({key:'features',value:val}); db.settings.features=val; toast('Сохранено'); };
+}
+
+/* ---------- DATA ---------- */
+function renderDataAdmin(){
+  $('#adminContent').innerHTML=`<div class="panel"><h3>Экспорт</h3><div class="row-actions" style="margin-top:0"><button class="btn" id="expAll"><svg class="icon"><use href="#i-download"/></svg>Всё (JSON)</button><button class="btn ghost" id="expEvents"><svg class="icon"><use href="#i-download"/></svg>События</button></div></div>
+    <div class="panel"><h3>Импорт событий</h3><div class="field"><textarea id="impJson" style="min-height:160px;font-family:monospace;font-size:12px" placeholder='[{"title":"...","start_at":"2026-05-01T18:00:00Z","price":0}]'></textarea></div><div class="row-actions"><button class="btn" id="impBtn"><svg class="icon"><use href="#i-upload"/></svg>Импортировать</button></div></div>`;
+  $('#expAll').onclick=()=>downloadJSON({events:db.events,venues:db.venues,categories:db.categories,collections:db.collections,collection_items:db.collection_items,ads:db.ads,settings:db.settings},'afisha-backup.json');
+  $('#expEvents').onclick=()=>downloadJSON(db.events,'afisha-events.json');
+  $('#impBtn').onclick=async()=>{ try{ const arr=JSON.parse($('#impJson').value); if(!Array.isArray(arr))throw new Error('Ожидается массив'); for(const e of arr){ e.id=e.id||crypto.randomUUID(); e.status=e.status||'published'; await sb.from('events').insert(e); } await loadDB(); toast(`Импортировано: ${arr.length}`); }catch(err){ toast('Ошибка: '+err.message,true); } };
+}
+function downloadJSON(data,name){ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+
+/* ================================================================
+   BOOT
+=============================================================== */
+async function boot(){
+  await loadDB();
+  if(location.hash==='#admin'||location.hash==='#/admin'){ showAdmin(); } else { router(); }
+  setupRealtime();
+  const fs=$('#footerStats'); if(fs) fs.textContent=`${db.events.length} событий · ${db.venues.length} мест`;
+}
+boot();
+window.addEventListener('hashchange',()=>{ if(location.hash!=='#admin'&&location.hash!=='#/admin'){ $('#adminApp').classList.add('hidden'); $('#userApp').classList.remove('hidden'); } });
+$('#favBtn')?.addEventListener('click',()=>{ location.hash='#/favs'; });
+</script>
+</body>
+</html>
